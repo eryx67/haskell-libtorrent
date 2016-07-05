@@ -5,12 +5,13 @@
 
 module Libtorrent.ErrorCode where
 
+import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Data.Text (Text)
 import           Foreign.ForeignPtr ( ForeignPtr, withForeignPtr )
 import qualified Language.C.Inline as C
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Unsafe as CU
-import System.IO.Unsafe (unsafePerformIO)
+import           System.IO.Unsafe (unsafePerformIO)
 
 
 import           Libtorrent.Inline
@@ -45,18 +46,18 @@ instance FromPtr ErrorCode where
 instance WithPtr ErrorCode where
   withPtr (ErrorCode fptr) = withForeignPtr fptr
 
-newErrorCode :: IO ErrorCode
+newErrorCode :: MonadIO m => m ErrorCode
 newErrorCode =
-  fromPtr [CU.exp| error_code * { new error_code() } |]
+  liftIO $ fromPtr [CU.exp| error_code * { new error_code() } |]
 
-errorCodeValue :: ErrorCode -> IO C.CInt
+errorCodeValue :: MonadIO m => ErrorCode -> m C.CInt
 errorCodeValue (ErrorCode fptr) =
-  withForeignPtr fptr $ \ptr ->
+  liftIO . withForeignPtr fptr $ \ptr ->
   [CU.exp| int { $(error_code * ptr)->value() } |]
 
-errorCodeMessage :: ErrorCode -> IO Text
+errorCodeMessage :: MonadIO m => ErrorCode -> m Text
 errorCodeMessage (ErrorCode fptr) =
-  withForeignPtr fptr $ \ptr -> do
+  liftIO . withForeignPtr fptr $ \ptr -> do
     msg <- fromPtr [CU.exp| string * { new string($(error_code * ptr)->message()) } |]
     stdStringToText msg
 

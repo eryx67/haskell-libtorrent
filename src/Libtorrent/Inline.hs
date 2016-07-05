@@ -24,11 +24,13 @@ libtorrentTypesTable = M.fromList
   , (C.TypeName "utp_status", [t| C'UtpStatus|])
   , (C.TypeName "session_proxy", [t| C'SessionProxy|])
   , (C.TypeName "torrent_info", [t| C'TorrentInfo|])
+  , (C.TypeName "create_torrent", [t| C'CreateTorrent|])
   , (C.TypeName "add_torrent_params", [t| C'AddTorrentParams|])
   , (C.TypeName "torrent_handle", [t| C'TorrentHandle|])
   , (C.TypeName "VectorTorrentHandle", [t| C'VectorTorrentHandle|])
   , (C.TypeName "dht_settings", [t| C'DhtSettings|])
   , (C.TypeName "pe_settings", [t| C'PeSettings|])
+  , (C.TypeName "proxy_settings", [t| C'ProxySettings|])
   , (C.TypeName "session_settings", [t| C'SessionSettings|])
   , (C.TypeName "feed_handle", [t| C'FeedHandle|])
   , (C.TypeName "feed_settings", [t| C'FeedSettings|])
@@ -147,6 +149,7 @@ libtorrentTypesTable = M.fromList
   , (C.TypeName "dht_direct_response_alert"     , [t|C'DhtDirectResponseAlert|])
   , (C.TypeName "picker_log_alert"              , [t|C'PickerLogAlert|])
   , (C.TypeName "VectorChar"                    , [t| C'VectorChar|])
+  , (C.TypeName "VectorUint8"                   , [t| C'VectorUint8|])
   , (C.TypeName "Plugin"                        , [t|C'Plugin|])
   , (C.TypeName "TorrentPlugin"                 , [t|C'TorrentPlugin|])
   , (C.TypeName "entry"                         , [t|C'BencodeEntry|])
@@ -157,6 +160,7 @@ libtorrentTypesTable = M.fromList
   -- callbacks
   , (C.TypeName "AlertDispatchCallback"         , [t|FunPtr C'AlertDispatchCallback|])
   , (C.TypeName "TorrentStatusFilter"           , [t|FunPtr C'TorrentStatusFilter|])
+  , (C.TypeName "SetPieceHashesCb"              , [t|FunPtr (C.CInt -> IO ())|])
   ]
 
 data C'String
@@ -165,6 +169,7 @@ data C'ErrorCode
 data C'Session
 data C'SessionProxy
 data C'TorrentInfo
+data C'CreateTorrent
 data C'AddTorrentParams
 data C'TorrentHandle
 data C'VectorTorrentHandle
@@ -179,6 +184,7 @@ data C'PeerRequest
 data C'TorrentStatus
 data C'DhtSettings
 data C'PeSettings
+data C'ProxySettings
 data C'SessionSettings
 data C'VectorTorrentStatus
 data C'Bitfield
@@ -283,6 +289,7 @@ data C'DhtGetPeersReplyAlert
 data C'DhtDirectResponseAlert
 data C'PickerLogAlert
 data C'VectorChar
+data C'VectorUint8
 data C'SessionStatus
 data C'UtpStatus
 data C'TorrentPlugin

@@ -36,6 +36,7 @@ module Libtorrent.Session.DhtSettings (DhtSettings
                                         , setIgnoreDarkBoolernet
                                         ) where
 
+import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Foreign.C.Types (CInt)
 import           Foreign.ForeignPtr ( ForeignPtr, withForeignPtr )
 import           Foreign.Marshal.Utils (toBool, fromBool)
@@ -69,143 +70,143 @@ instance FromPtr DhtSettings where
 instance WithPtr DhtSettings where
   withPtr (DhtSettings fptr) = withForeignPtr fptr
 
-newDhtSettings :: IO DhtSettings
+newDhtSettings :: MonadIO m =>  m DhtSettings
 newDhtSettings =
-  fromPtr [CU.exp| dht_settings * { new dht_settings() }|]
+  liftIO $ fromPtr [CU.exp| dht_settings * { new dht_settings() }|]
 
-getMaxPeersReply :: DhtSettings -> IO CInt
+getMaxPeersReply :: MonadIO m =>  DhtSettings -> m CInt
 getMaxPeersReply ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(dht_settings * hoPtr)->max_peers_reply } |]
 
-setMaxPeersReply :: DhtSettings -> CInt -> IO ()
+setMaxPeersReply :: MonadIO m =>  DhtSettings -> CInt -> m ()
 setMaxPeersReply ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(dht_settings * hoPtr)->max_peers_reply = $(int val)} |]
 
-getSearchBranching :: DhtSettings -> IO CInt
+getSearchBranching :: MonadIO m =>  DhtSettings -> m CInt
 getSearchBranching ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(dht_settings * hoPtr)->search_branching } |]
 
-setSearchBranching :: DhtSettings -> CInt -> IO ()
+setSearchBranching :: MonadIO m =>  DhtSettings -> CInt -> m ()
 setSearchBranching ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(dht_settings * hoPtr)->search_branching = $(int val)} |]
 
-getMaxFailCount :: DhtSettings -> IO CInt
+getMaxFailCount :: MonadIO m =>  DhtSettings -> m CInt
 getMaxFailCount ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(dht_settings * hoPtr)->max_fail_count } |]
 
-setMaxFailCount :: DhtSettings -> CInt -> IO ()
+setMaxFailCount :: MonadIO m =>  DhtSettings -> CInt -> m ()
 setMaxFailCount ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(dht_settings * hoPtr)->max_fail_count = $(int val)} |]
 
-getMaxTorrents :: DhtSettings -> IO CInt
+getMaxTorrents :: MonadIO m =>  DhtSettings -> m CInt
 getMaxTorrents ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(dht_settings * hoPtr)->max_torrents } |]
 
-setMaxTorrents :: DhtSettings -> CInt -> IO ()
+setMaxTorrents :: MonadIO m =>  DhtSettings -> CInt -> m ()
 setMaxTorrents ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(dht_settings * hoPtr)->max_torrents = $(int val)} |]
 
-getMaxDhtItems :: DhtSettings -> IO CInt
+getMaxDhtItems :: MonadIO m =>  DhtSettings -> m CInt
 getMaxDhtItems ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(dht_settings * hoPtr)->max_dht_items } |]
 
-setMaxDhtItems :: DhtSettings -> CInt -> IO ()
+setMaxDhtItems :: MonadIO m =>  DhtSettings -> CInt -> m ()
 setMaxDhtItems ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(dht_settings * hoPtr)->max_dht_items = $(int val)} |]
 
-getMaxTorrentSearchReply :: DhtSettings -> IO CInt
+getMaxTorrentSearchReply :: MonadIO m =>  DhtSettings -> m CInt
 getMaxTorrentSearchReply ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(dht_settings * hoPtr)->max_torrent_search_reply } |]
 
-setMaxTorrentSearchReply :: DhtSettings -> CInt -> IO ()
+setMaxTorrentSearchReply :: MonadIO m =>  DhtSettings -> CInt -> m ()
 setMaxTorrentSearchReply ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(dht_settings * hoPtr)->max_torrent_search_reply = $(int val)} |]
 
-getRestrictRoutingIps :: DhtSettings -> IO Bool
+getRestrictRoutingIps :: MonadIO m =>  DhtSettings -> m Bool
 getRestrictRoutingIps ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toBool <$> [CU.exp| bool { $(dht_settings * hoPtr)->restrict_routing_ips } |]
 
-setRestrictRoutingIps :: DhtSettings -> Bool -> IO ()
+setRestrictRoutingIps :: MonadIO m =>  DhtSettings -> Bool -> m ()
 setRestrictRoutingIps ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(dht_settings * hoPtr)->restrict_routing_ips = $(bool val')} |]
 
-getRestrictSearchIps :: DhtSettings -> IO Bool
+getRestrictSearchIps :: MonadIO m =>  DhtSettings -> m Bool
 getRestrictSearchIps ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toBool <$> [CU.exp| bool { $(dht_settings * hoPtr)->restrict_search_ips } |]
 
-setRestrictSearchIps :: DhtSettings -> Bool -> IO ()
+setRestrictSearchIps :: MonadIO m =>  DhtSettings -> Bool -> m ()
 setRestrictSearchIps ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(dht_settings * hoPtr)->restrict_search_ips = $(bool val')} |]
 
-getExtendedRoutingTable :: DhtSettings -> IO Bool
+getExtendedRoutingTable :: MonadIO m =>  DhtSettings -> m Bool
 getExtendedRoutingTable ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toBool <$> [CU.exp| bool { $(dht_settings * hoPtr)->extended_routing_table } |]
 
-setExtendedRoutingTable :: DhtSettings -> Bool -> IO ()
+setExtendedRoutingTable :: MonadIO m =>  DhtSettings -> Bool -> m ()
 setExtendedRoutingTable ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(dht_settings * hoPtr)->extended_routing_table = $(bool val')} |]
 
-getAggressiveLookups :: DhtSettings -> IO Bool
+getAggressiveLookups :: MonadIO m =>  DhtSettings -> m Bool
 getAggressiveLookups ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toBool <$> [CU.exp| bool { $(dht_settings * hoPtr)->aggressive_lookups } |]
 
-setAggressiveLookups :: DhtSettings -> Bool -> IO ()
+setAggressiveLookups :: MonadIO m =>  DhtSettings -> Bool -> m ()
 setAggressiveLookups ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(dht_settings * hoPtr)->aggressive_lookups = $(bool val')} |]
 
-getPrivacyLookups :: DhtSettings -> IO Bool
+getPrivacyLookups :: MonadIO m =>  DhtSettings -> m Bool
 getPrivacyLookups ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toBool <$> [CU.exp| bool { $(dht_settings * hoPtr)->privacy_lookups } |]
 
-setPrivacyLookups :: DhtSettings -> Bool -> IO ()
+setPrivacyLookups :: MonadIO m =>  DhtSettings -> Bool -> m ()
 setPrivacyLookups ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(dht_settings * hoPtr)->privacy_lookups = $(bool val')} |]
 
-getEnforceNodeId :: DhtSettings -> IO Bool
+getEnforceNodeId :: MonadIO m =>  DhtSettings -> m Bool
 getEnforceNodeId ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toBool <$> [CU.exp| bool { $(dht_settings * hoPtr)->enforce_node_id } |]
 
-setEnforceNodeId :: DhtSettings -> Bool -> IO ()
+setEnforceNodeId :: MonadIO m =>  DhtSettings -> Bool -> m ()
 setEnforceNodeId ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(dht_settings * hoPtr)->enforce_node_id = $(bool val')} |]
 
-getIgnoreDarkBoolernet :: DhtSettings -> IO Bool
+getIgnoreDarkBoolernet :: MonadIO m =>  DhtSettings -> m Bool
 getIgnoreDarkBoolernet ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toBool <$> [CU.exp| bool { $(dht_settings * hoPtr)->ignore_dark_internet } |]
 
-setIgnoreDarkBoolernet :: DhtSettings -> Bool -> IO ()
+setIgnoreDarkBoolernet :: MonadIO m =>  DhtSettings -> Bool -> m ()
 setIgnoreDarkBoolernet ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(dht_settings * hoPtr)->ignore_dark_internet = $(bool val')} |]

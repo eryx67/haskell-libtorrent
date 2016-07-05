@@ -8,6 +8,7 @@ module Libtorrent.Bencode (Bencoded
                           , bencodedData
                           ) where
 
+import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Exception (bracket)
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
@@ -33,9 +34,9 @@ C.using "namespace std"
 
 newtype Bencoded = Bencoded ByteString
 
-entryToBencoded :: Ptr C'BencodeEntry -> IO Bencoded
+entryToBencoded :: MonadIO m => Ptr C'BencodeEntry -> m Bencoded
 entryToBencoded ePtr =
-  bracket
+  liftIO $ bracket
   [CU.exp| VectorChar * { new std::vector<char>() } |]
   (\bufPtr -> [CU.exp| void { delete $(VectorChar * bufPtr)} |]) $
   \bufPtr ->

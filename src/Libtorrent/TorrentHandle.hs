@@ -65,21 +65,23 @@ module Libtorrent.TorrentHandle ( TorrentHandle(..)
                                 , forceReannounce
                                 , forceDhtAnnounce
                                 , scrapeTracker
-                                , uploadLimit
-                                , downloadLimit
-                                , setUploadLimit
-                                , setDownloadLimit
+                                , torrentHandleUploadLimit
+                                , torrentHandleDownloadLimit
+                                , setTorrentHandleUploadLimit
+                                , setTorrentHandleDownloadLimit
                                 , setSequentialDownload
-                                , maxUploads
-                                , setMaxUploads
-                                , maxConnections
-                                , setMaxConnections
+                                , torrentHandleMaxUploads
+                                , setTorrentHandleMaxUploads
+                                , torrentHandleMaxConnections
+                                , setTorrentHandleMaxConnections
                                 , moveStorage
                                 , renameFile
                                 , superSeeding
                                 , infoHash
+                                , torrentFile
                                 ) where
 
+import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Data.ByteString (ByteString)
 import           Data.Int (Int64)
 import           Data.Maybe (fromMaybe)
@@ -107,7 +109,7 @@ import           Libtorrent.String
 import           Libtorrent.TorrentHandle.PartialPieceInfo
 import           Libtorrent.TorrentHandle.TorrentStatus
 import           Libtorrent.TorrentInfo.AnnounceEntry
-import           Libtorrent.TorrentInfo ()
+import           Libtorrent.TorrentInfo (TorrentInfo)
 import           Libtorrent.Types
 import           Libtorrent.TH (defineStdVector)
 
@@ -130,7 +132,7 @@ $(defineStdVector "partial_piece_info" "VectorPartialPieceInfo" ''C'PartialPiece
 
 data Flags =
       OverwriteExisting
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 data StatusFlags =
   QueryDistributedCopies
@@ -141,25 +143,25 @@ data StatusFlags =
   | QueryTorrentFile
   | QueryName
   | QuerySavePath
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 data DeadlineFlags =
   AlertWhenAvailable
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 data FileProgressFlags =
   PieceGranularity
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 data PauseFlags =
   GracefulPause
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 data SaveResumeFlags =
   FlushDiskCache
   | SaveInfoDict
   | OnlyIfModified
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 newtype TorrentHandle = TorrentHandle { unTorrentHandle :: ForeignPtr (CType TorrentHandle)}
 
@@ -178,29 +180,29 @@ instance WithPtr TorrentHandle where
 
 
 -- | Create new torrent_handle.
-newTorrentHandle :: IO TorrentHandle
+newTorrentHandle :: MonadIO m =>  m TorrentHandle
 newTorrentHandle =
-  fromPtr [C.exp| torrent_handle * { new torrent_handle() } |]
+  liftIO $ fromPtr [C.exp| torrent_handle * { new torrent_handle() } |]
 
-addPiece :: TorrentHandle -> CInt -> ByteString -> IO ()
+addPiece :: MonadIO m =>  TorrentHandle -> CInt -> ByteString -> m ()
 addPiece th pieceNum pieceData =
-  withPtr th $ \thPtr ->
+  liftIO . withPtr th $ \thPtr ->
   checkError [exceptU| { $(torrent_handle * thPtr)->add_piece($(int pieceNum), $bs-ptr:pieceData); } |]
 
-readPiece :: TorrentHandle -> CInt -> IO ()
+readPiece :: MonadIO m =>  TorrentHandle -> CInt -> m ()
 readPiece th pieceNum =
-  withPtr th $ \thPtr ->
+  liftIO . withPtr th $ \thPtr ->
   checkError [exceptU| { $(torrent_handle * thPtr)->read_piece($(int pieceNum)); } |]
 
-havePiece :: TorrentHandle -> CInt -> IO Bool
+havePiece :: MonadIO m =>  TorrentHandle -> CInt -> m Bool
 havePiece th pieceNum =
-  withPtr th $ \thPtr ->
+  liftIO . withPtr th $ \thPtr ->
   fmap toBool . C.withPtr_ $ \vPtr -> do
     checkError [exceptU| { *$(bool * vPtr) = $(torrent_handle * thPtr)->have_piece($(int pieceNum)); } |]
 
-getPeerInfo :: TorrentHandle -> IO (StdVector PeerInfo)
+getPeerInfo :: MonadIO m =>  TorrentHandle -> m (StdVector PeerInfo)
 getPeerInfo th =
-  withPtr th $ \thPtr -> do
+  liftIO . withPtr th $ \thPtr -> do
   fromPtr . C.withPtr_ $ \resPtr ->
     checkError [exceptU| {
                        *$(VectorPeerInfo ** resPtr) = new VectorPeerInfo();
@@ -208,9 +210,9 @@ getPeerInfo th =
                        }
                        |]
 
-torrentStatus :: TorrentHandle -> Maybe (BitFlags StatusFlags) -> IO TorrentStatus
+torrentStatus :: MonadIO m =>  TorrentHandle -> Maybe (BitFlags StatusFlags) -> m TorrentStatus
 torrentStatus ho flags =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
     let flags' = fromMaybe 0xffffffff (fromIntegral . fromEnum <$> flags)
     fromPtr . C.withPtr_ $ \tsPtr ->
       checkError [exceptU| {
@@ -219,9 +221,9 @@ torrentStatus ho flags =
                          }
                          |]
 
-getDownloadQueue :: TorrentHandle -> IO (StdVector PartialPieceInfo)
+getDownloadQueue :: MonadIO m =>  TorrentHandle -> m (StdVector PartialPieceInfo)
 getDownloadQueue ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   fromPtr . C.withPtr_ $ \ppiPtr ->
   checkError [exceptU| {
                      *$(VectorPartialPieceInfo ** ppiPtr) = new VectorPartialPieceInfo();
@@ -229,32 +231,32 @@ getDownloadQueue ho =
                      }
                      |]
 
-resetPieceDeadline :: TorrentHandle -> C.CInt -> IO ()
+resetPieceDeadline :: MonadIO m =>  TorrentHandle -> C.CInt -> m ()
 resetPieceDeadline ho idx =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   checkError [exceptU| { $(torrent_handle * hoPtr)->reset_piece_deadline($(int idx)); } |]
 
-clearPieceDeadlines :: TorrentHandle -> IO ()
+clearPieceDeadlines :: MonadIO m =>  TorrentHandle -> m ()
 clearPieceDeadlines ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   checkError [exceptU| { $(torrent_handle * hoPtr)->clear_piece_deadlines(); } |]
 
-setPieceDeadline :: TorrentHandle -> C.CInt -> C.CInt -> Maybe (BitFlags DeadlineFlags) -> IO ()
+setPieceDeadline :: MonadIO m =>  TorrentHandle -> C.CInt -> C.CInt -> Maybe (BitFlags DeadlineFlags) -> m ()
 setPieceDeadline ho idx deadline flags =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let flags' = fromMaybe 0 (fromIntegral . fromEnum <$> flags)
   checkError [exceptU|
                      { $(torrent_handle * hoPtr)->set_piece_deadline($(int idx), $(int deadline), $(int flags')); }
                      |]
 
-setPriority :: TorrentHandle -> C.CInt -> IO ()
+setPriority :: MonadIO m =>  TorrentHandle -> C.CInt -> m ()
 setPriority ho prio =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   checkError [exceptU| { $(torrent_handle * hoPtr)->set_priority($(int prio)); } |]
 
-fileProgress :: TorrentHandle -> Maybe (BitFlags FileProgressFlags) -> IO (Vector Int64)
+fileProgress :: MonadIO m =>  TorrentHandle -> Maybe (BitFlags FileProgressFlags) -> m (Vector Int64)
 fileProgress ho flags =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   (dataSize, dataPtr) <- C.withPtrs_ $ \(dataSizePtr, dataPtrPtr) -> do
     let flags' = fromMaybe 0 (fromIntegral . fromEnum <$> flags)
     checkError [exceptU| {
@@ -271,41 +273,41 @@ fileProgress ho flags =
 -- TODO: defined in libtorrent 1.1.0
 -- file_status (std::vector<pool_file_status>& status) const;
 
-clearError :: TorrentHandle -> IO ()
+clearError :: MonadIO m =>  TorrentHandle -> m ()
 clearError ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   checkError [exceptU| { $(torrent_handle * hoPtr)->clear_error(); } |]
 
-trackers :: TorrentHandle -> IO (StdVector AnnounceEntry)
+trackers :: MonadIO m =>  TorrentHandle -> m (StdVector AnnounceEntry)
 trackers ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   fromPtr . C.withPtr_ $ \aePtr ->
   checkError [exceptU| {
                      *$(VectorAnnounceEntry ** aePtr) = new VectorAnnounceEntry($(torrent_handle * hoPtr)->trackers());
                      }
                      |]
 
-replaceTrackers :: TorrentHandle -> StdVector AnnounceEntry -> IO ()
+replaceTrackers :: MonadIO m =>  TorrentHandle -> StdVector AnnounceEntry -> m ()
 replaceTrackers ho aes =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   withPtr aes $ \aesPtr ->
   checkError [exceptU| { $(torrent_handle * hoPtr)->replace_trackers(*$(VectorAnnounceEntry * aesPtr)); } |]
 
-addTracker :: TorrentHandle -> AnnounceEntry -> IO ()
+addTracker :: MonadIO m =>  TorrentHandle -> AnnounceEntry -> m ()
 addTracker ho ae =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   withPtr ae $ \aePtr ->
   checkError [exceptU| { $(torrent_handle * hoPtr)->add_tracker(*$(announce_entry * aePtr)); } |]
 
-addUrlSeed :: TorrentHandle -> Text -> IO ()
-addUrlSeed ho url = do
+addUrlSeed :: MonadIO m =>  TorrentHandle -> Text -> m ()
+addUrlSeed ho url = liftIO $ do
   s <- textToStdString url
   withPtr ho $ \hoPtr ->
     withPtr s $ \sPtr ->
     checkError [exceptU| { $(torrent_handle * hoPtr)->add_url_seed(*$(string * sPtr)); } |]
 
-removeUrlSeed :: TorrentHandle -> Text ->IO ()
-removeUrlSeed ho url = do
+removeUrlSeed :: MonadIO m =>  TorrentHandle -> Text ->m ()
+removeUrlSeed ho url = liftIO $ do
   s <- textToStdString url
   withPtr ho $ \hoPtr ->
     withPtr s $ \sPtr ->
@@ -313,15 +315,15 @@ removeUrlSeed ho url = do
 
 --    std::set<std::string> url_seeds () const;
 
-addHttpSeed :: TorrentHandle -> Text -> IO ()
-addHttpSeed ho url = do
+addHttpSeed :: MonadIO m =>  TorrentHandle -> Text -> m ()
+addHttpSeed ho url = liftIO $ do
   s <- textToStdString url
   withPtr ho $ \hoPtr ->
     withPtr s $ \sPtr ->
     checkError [exceptU| { $(torrent_handle * hoPtr)->add_http_seed(*$(string * sPtr)); } |]
 
-removeHttpSeed :: TorrentHandle -> Text ->IO ()
-removeHttpSeed ho url = do
+removeHttpSeed :: MonadIO m =>  TorrentHandle -> Text ->m ()
+removeHttpSeed ho url = liftIO $ do
   s <- textToStdString url
   withPtr ho $ \hoPtr ->
     withPtr s $ \sPtr ->
@@ -333,109 +335,109 @@ removeHttpSeed ho url = do
 --       boost::function<boost::shared_ptr<torrent_plugin>(torrent_handle const&, void*)> const& ext
 --       , void* userdata = 0);
 
-setMetadata :: TorrentHandle -> ByteString -> IO Bool
+setMetadata :: MonadIO m =>  TorrentHandle -> ByteString -> m Bool
 setMetadata ho md =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   fmap toBool . C.withPtr_ $ \ptr ->
     checkError [exceptU| { *$(bool * ptr) = $(torrent_handle * hoPtr)->set_metadata($bs-ptr:md, $bs-len:md); } |]
 
-isValid :: TorrentHandle -> IO Bool
+isValid :: MonadIO m =>  TorrentHandle -> m Bool
 isValid ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toBool <$> [CU.exp| bool { $(torrent_handle * hoPtr)->is_valid() } |]
 
-pause :: TorrentHandle -> Maybe (BitFlags PauseFlags) -> IO ()
+pause :: MonadIO m =>  TorrentHandle -> Maybe (BitFlags PauseFlags) -> m ()
 pause ho flags =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
     let flags' = fromMaybe 0 (fromIntegral . fromEnum <$> flags)
     checkError [exceptU| { $(torrent_handle * hoPtr)->pause($(int flags')); } |]
 
-resume :: TorrentHandle -> IO ()
+resume :: MonadIO m =>  TorrentHandle -> m ()
 resume ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   checkError [exceptU| { $(torrent_handle * hoPtr)->resume(); } |]
 
 -- TODO in libtorrent 1.1.0
--- stopWhenReady :: TorrentHandle -> Bool -> IO ()
--- stopWhenReady ho v = do
+-- stopWhenReady :: MonadIO m =>  TorrentHandle -> Bool -> m ()
+-- stopWhenReady ho v = liftIO $ do
 --   let b = fromBool v
 --   withPtr ho $ \hoPtr ->
 --     checkError [exceptU| void { $(torrent_handle * hoPtr)->stop_when_ready($(bool b)) } |]
 
-setUploadMode :: TorrentHandle -> Bool -> IO ()
-setUploadMode ho v = do
+setUploadMode :: MonadIO m =>  TorrentHandle -> Bool -> m ()
+setUploadMode ho v = liftIO $ do
   let b = fromBool v
   withPtr ho $ \hoPtr ->
     checkError [exceptU| { $(torrent_handle * hoPtr)->set_upload_mode($(bool b)); } |]
 
-setShareMode :: TorrentHandle -> Bool -> IO ()
-setShareMode ho v = do
+setShareMode :: MonadIO m =>  TorrentHandle -> Bool -> m ()
+setShareMode ho v = liftIO $ do
   let b = fromBool v
   withPtr ho $ \hoPtr ->
     checkError [exceptU| { $(torrent_handle * hoPtr)->set_share_mode($(bool b)); } |]
 
-flushCache :: TorrentHandle -> IO ()
+flushCache :: MonadIO m =>  TorrentHandle -> m ()
 flushCache ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   checkError [exceptU| { $(torrent_handle * hoPtr)->flush_cache(); } |]
 
-applyIpFilter :: TorrentHandle -> Bool -> IO ()
-applyIpFilter ho v = do
+applyIpFilter :: MonadIO m =>  TorrentHandle -> Bool -> m ()
+applyIpFilter ho v = liftIO $ do
   let b = fromBool v
   withPtr ho $ \hoPtr ->
     checkError [exceptU| { $(torrent_handle * hoPtr)->apply_ip_filter($(bool b)); } |]
 
-forceRecheck :: TorrentHandle -> IO ()
+forceRecheck :: MonadIO m =>  TorrentHandle -> m ()
 forceRecheck ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  checkError [exceptU| { $(torrent_handle * hoPtr)->force_recheck(); } |]
 
-saveResumeData :: TorrentHandle -> Maybe (SaveResumeFlags) -> IO ()
+saveResumeData :: MonadIO m =>  TorrentHandle -> Maybe (SaveResumeFlags) -> m ()
 saveResumeData ho flags =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
     let flags' = fromMaybe 0 (fromIntegral . fromEnum <$> flags)
     checkError [exceptU| { $(torrent_handle * hoPtr)->save_resume_data($(int flags')); } |]
 
-needSaveResumeData :: TorrentHandle -> IO Bool
+needSaveResumeData :: MonadIO m =>  TorrentHandle -> m Bool
 needSaveResumeData ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   fmap toBool . C.withPtr_ $ \ptr ->
   checkError [exceptU| { *$(bool * ptr) = $(torrent_handle * hoPtr)->need_save_resume_data(); } |]
 
-autoManaged :: TorrentHandle -> Bool -> IO ()
-autoManaged ho v = do
+autoManaged :: MonadIO m =>  TorrentHandle -> Bool -> m ()
+autoManaged ho v = liftIO $ do
   let b = fromBool v
   withPtr ho $ \hoPtr ->
     checkError [exceptU| { $(torrent_handle * hoPtr)->auto_managed($(bool b)); } |]
 
-queuePositionDown :: TorrentHandle -> IO ()
+queuePositionDown :: MonadIO m =>  TorrentHandle -> m ()
 queuePositionDown ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  checkError [exceptU| { $(torrent_handle * hoPtr)->queue_position_down(); } |]
 
-queuePositionTop :: TorrentHandle -> IO ()
+queuePositionTop :: MonadIO m =>  TorrentHandle -> m ()
 queuePositionTop ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  checkError [exceptU| { $(torrent_handle * hoPtr)->queue_position_top(); } |]
 
-queuePosition :: TorrentHandle -> IO CInt
+queuePosition :: MonadIO m =>  TorrentHandle -> m CInt
 queuePosition ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   C.withPtr_ $ \ptr ->
   checkError [exceptU|  { *$(int * ptr) = $(torrent_handle * hoPtr)->queue_position(); } |]
 
-queuePositionBottom :: TorrentHandle -> IO ()
+queuePositionBottom :: MonadIO m =>  TorrentHandle -> m ()
 queuePositionBottom ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  checkError [exceptU| { $(torrent_handle * hoPtr)->queue_position_bottom(); } |]
 
-queuePositionUp :: TorrentHandle -> IO ()
+queuePositionUp :: MonadIO m =>  TorrentHandle -> m ()
 queuePositionUp ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  checkError [exceptU| { $(torrent_handle * hoPtr)->queue_position_up(); } |]
 
-setSslCertificate :: TorrentHandle -> Text -> Text -> Text -> IO ()
-setSslCertificate ho private_key dh_params passphrase = do
+setSslCertificate :: MonadIO m =>  TorrentHandle -> Text -> Text -> Text -> m ()
+setSslCertificate ho private_key dh_params passphrase = liftIO $ do
   pks <- textToStdString private_key
   ds <- textToStdString dh_params
   pas <- textToStdString passphrase
@@ -445,21 +447,26 @@ setSslCertificate ho private_key dh_params passphrase = do
     withPtr pas $ \pasPtr ->
     checkError [exceptU| { $(torrent_handle * hoPtr)->set_ssl_certificate(*$(string * pksPtr), *$(string * dsPtr), *$(string * pasPtr)); } |]
 
+-- TODO:
 --    void set_ssl_certificate_buffer (std::string const& certificate
 --       , std::string const& private_key
 --       , std::string const& dh_params);
 --    storage_interface* get_storage_impl () const;
---    boost::shared_ptr<const torrent_info> torrent_file () const;
 
-useInterface :: TorrentHandle -> [Text] -> IO ()
-useInterface ho ifs = do
+torrentFile :: MonadIO m => TorrentHandle -> m TorrentInfo
+torrentFile ho =
+  liftIO . withPtr ho $ \hoPtr ->
+  fromPtr [CU.exp| torrent_info * { new torrent_info(*$(torrent_handle * hoPtr)->torrent_file().get()) } |]
+
+useInterface :: MonadIO m =>  TorrentHandle -> [Text] -> m ()
+useInterface ho ifs = liftIO $ do
   withCAString (T.unpack $ T.intercalate "," ifs) $ \ifsPtr ->
     withPtr ho $ \hoPtr ->
     checkError [exceptU| { $(torrent_handle * hoPtr)->use_interface($(char * ifsPtr)); } |]
 
-pieceAvailability :: TorrentHandle -> IO (Vector C.CInt)
+pieceAvailability :: MonadIO m =>  TorrentHandle -> m (Vector C.CInt)
 pieceAvailability ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   (dataSize, dataPtr) <- C.withPtrs_ $ \(dataSizePtr, dataPtrPtr) -> do
     checkError [exceptU| {
                        std::vector<int> v;
@@ -472,15 +479,15 @@ pieceAvailability ho =
   dataFPtr <- newForeignPtr dataPtr $ [CU.exp| void {delete $(int * dataPtr)} |]
   return $ unsafeFromForeignPtr0 dataFPtr (fromIntegral dataSize)
 
-piecePriority :: TorrentHandle -> C.CInt -> IO C.CInt
+piecePriority :: MonadIO m =>  TorrentHandle -> C.CInt -> m C.CInt
 piecePriority ho idx =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   C.withPtr_ $ \ptr ->
   checkError [exceptU| { *$(int * ptr) = $(torrent_handle * hoPtr)->piece_priority($(int idx)); } |]
 
-piecePriorities :: TorrentHandle -> IO (Vector C.CInt)
+piecePriorities :: MonadIO m =>  TorrentHandle -> m (Vector C.CInt)
 piecePriorities ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   (dataSize, dataPtr) <- C.withPtrs_ $ \(dataSizePtr, dataPtrPtr) -> do
     checkError [exceptU| {
                        std::vector<int> v = $(torrent_handle * hoPtr)->piece_priorities();
@@ -492,15 +499,15 @@ piecePriorities ho =
   dataFPtr <- newForeignPtr dataPtr $ [CU.exp| void {delete $(int * dataPtr)} |]
   return $ unsafeFromForeignPtr0 dataFPtr (fromIntegral dataSize)
 
-setPiecePriority :: TorrentHandle -> C.CInt -> C.CInt -> IO ()
+setPiecePriority :: MonadIO m =>  TorrentHandle -> C.CInt -> C.CInt -> m ()
 setPiecePriority ho idx priority=
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   checkError [exceptU| { $(torrent_handle * hoPtr)->piece_priority($(int idx), $(int priority)); } |]
 
 
-prioritizePieces :: TorrentHandle -> Vector C.CInt -> IO ()
+prioritizePieces :: MonadIO m =>  TorrentHandle -> Vector C.CInt -> m ()
 prioritizePieces ho ps =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   checkError [exceptU| {
       std::vector<int> v($vec-ptr:(int * ps), $vec-ptr:(int * ps) + $vec-len:ps);
       $(torrent_handle * hoPtr)->prioritize_pieces(v);
@@ -509,15 +516,15 @@ prioritizePieces ho ps =
 
 --    void prioritize_pieces (std::vector<std::pair<int, int> > const& pieces) const;
 
-filePriority :: TorrentHandle -> C.CInt -> IO C.CInt
+filePriority :: MonadIO m =>  TorrentHandle -> C.CInt -> m C.CInt
 filePriority ho idx =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   C.withPtr_ $ \ptr ->
   checkError [exceptU| { *$(int * ptr) = $(torrent_handle * hoPtr)->file_priority($(int idx)); } |]
 
-filePriorities :: TorrentHandle -> IO (Vector C.CInt)
+filePriorities :: MonadIO m =>  TorrentHandle -> m (Vector C.CInt)
 filePriorities ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   (dataSize, dataPtr) <- C.withPtrs_ $ \(dataSizePtr, dataPtrPtr) -> do
     checkError [exceptU| {
                        std::vector<int> v = $(torrent_handle * hoPtr)->file_priorities();
@@ -529,122 +536,122 @@ filePriorities ho =
   dataFPtr <- newForeignPtr dataPtr $ [CU.exp| void {delete $(int * dataPtr)} |]
   return $ unsafeFromForeignPtr0 dataFPtr (fromIntegral dataSize)
 
-setFilePriority :: TorrentHandle -> C.CInt -> C.CInt -> IO ()
+setFilePriority :: MonadIO m =>  TorrentHandle -> C.CInt -> C.CInt -> m ()
 setFilePriority ho idx priority=
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   checkError [exceptU| { $(torrent_handle * hoPtr)->file_priority($(int idx), $(int priority)); } |]
 
 
-prioritizeFiles :: TorrentHandle -> Vector C.CInt -> IO ()
+prioritizeFiles :: MonadIO m =>  TorrentHandle -> Vector C.CInt -> m ()
 prioritizeFiles ho ps =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   checkError [exceptU| {
       std::vector<int> v($vec-ptr:(int * ps), $vec-ptr:(int * ps) + $vec-len:ps);
       $(torrent_handle * hoPtr)->prioritize_files(v);
      }
   |]
 
-forceReannounce :: TorrentHandle -> Maybe C.CInt -> Maybe C.CInt -> IO ()
+forceReannounce :: MonadIO m =>  TorrentHandle -> Maybe C.CInt -> Maybe C.CInt -> m ()
 forceReannounce ho seconds tracker_index =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let sec = fromMaybe 0 seconds
       tidx = fromMaybe (-1) tracker_index
   checkError [exceptU| { $(torrent_handle * hoPtr)->force_reannounce($(int sec), $(int tidx)); } |]
 
-forceDhtAnnounce :: TorrentHandle -> IO ()
+forceDhtAnnounce :: MonadIO m =>  TorrentHandle -> m ()
 forceDhtAnnounce ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   checkError [exceptU| { $(torrent_handle * hoPtr)->force_dht_announce(); } |]
 
-scrapeTracker :: TorrentHandle -> IO ()
+scrapeTracker :: MonadIO m =>  TorrentHandle -> m ()
 scrapeTracker ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   checkError [exceptU| { $(torrent_handle * hoPtr)->scrape_tracker(); } |]
 
-uploadLimit :: TorrentHandle -> IO CInt
-uploadLimit ho =
-  withPtr ho $ \hoPtr ->
+torrentHandleUploadLimit :: MonadIO m =>  TorrentHandle -> m CInt
+torrentHandleUploadLimit ho =
+  liftIO . withPtr ho $ \hoPtr ->
   C.withPtr_ $ \ptr ->
   checkError [exceptU| { *$(int * ptr) = $(torrent_handle * hoPtr)->upload_limit(); } |]
 
-downloadLimit :: TorrentHandle -> IO CInt
-downloadLimit ho =
-  withPtr ho $ \hoPtr ->
+torrentHandleDownloadLimit :: MonadIO m =>  TorrentHandle -> m CInt
+torrentHandleDownloadLimit ho =
+  liftIO . withPtr ho $ \hoPtr ->
   C.withPtr_ $ \ptr ->
   checkError [exceptU| { *$(int * ptr) = $(torrent_handle * hoPtr)->download_limit(); } |]
 
-setUploadLimit :: TorrentHandle -> C.CInt -> IO ()
-setUploadLimit ho limit =
-  withPtr ho $ \hoPtr ->
+setTorrentHandleUploadLimit :: MonadIO m =>  TorrentHandle -> C.CInt -> m ()
+setTorrentHandleUploadLimit ho limit =
+  liftIO . withPtr ho $ \hoPtr ->
   checkError [exceptU| { $(torrent_handle * hoPtr)->set_upload_limit($(int limit)); } |]
 
-setDownloadLimit :: TorrentHandle -> C.CInt -> IO ()
-setDownloadLimit ho limit =
-  withPtr ho $ \hoPtr ->
+setTorrentHandleDownloadLimit :: MonadIO m =>  TorrentHandle -> C.CInt -> m ()
+setTorrentHandleDownloadLimit ho limit =
+  liftIO . withPtr ho $ \hoPtr ->
                  checkError [exceptU| { $(torrent_handle * hoPtr)->set_download_limit($(int limit)); } |]
 
 
 -- TODO in libtorrent 1.1.0
--- setPinned :: TorrentHandle -> Bool -> IO ()
+-- setPinned :: MonadIO m =>  TorrentHandle -> Bool -> m ()
 -- setPinned ho sd =
---   withPtr ho $ \hoPtr -> do
+--   liftIO . withPtr ho $ \hoPtr -> do
 --     let sd' = fromBool sd
 --     checkError [exceptU| void { $(torrent_handle * hoPtr)->set_pinned($(bool sd')) } |]
 
-setSequentialDownload :: TorrentHandle -> Bool -> IO ()
+setSequentialDownload :: MonadIO m =>  TorrentHandle -> Bool -> m ()
 setSequentialDownload ho sd =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
     let sd' = fromBool sd
     checkError [exceptU| { $(torrent_handle * hoPtr)->set_sequential_download($(bool sd')); } |]
 
 --  void connect_peer (tcp::endpoint const& adr, int source = 0, int flags = 0x1 + 0x4 + 0x8) const;
 
-maxUploads :: TorrentHandle -> IO C.CInt
-maxUploads ho =
-  withPtr ho $ \hoPtr ->
+torrentHandleMaxUploads :: MonadIO m =>  TorrentHandle -> m C.CInt
+torrentHandleMaxUploads ho =
+  liftIO . withPtr ho $ \hoPtr ->
   C.withPtr_ $ \ptr ->
   checkError [exceptU| { *$(int * ptr) = $(torrent_handle * hoPtr)->max_uploads(); } |]
 
-setMaxUploads :: TorrentHandle -> C.CInt -> IO ()
-setMaxUploads ho max_uploads =
-  withPtr ho $ \hoPtr ->
+setTorrentHandleMaxUploads :: MonadIO m =>  TorrentHandle -> C.CInt -> m ()
+setTorrentHandleMaxUploads ho max_uploads =
+  liftIO . withPtr ho $ \hoPtr ->
   checkError [exceptU| { $(torrent_handle * hoPtr)->set_max_uploads($(int max_uploads)); } |]
 
-maxConnections :: TorrentHandle -> IO C.CInt
-maxConnections ho =
-  withPtr ho $ \hoPtr ->
+torrentHandleMaxConnections :: MonadIO m =>  TorrentHandle -> m C.CInt
+torrentHandleMaxConnections ho =
+  liftIO . withPtr ho $ \hoPtr ->
   C.withPtr_ $ \ptr ->
   checkError [exceptU| { *$(int * ptr) = $(torrent_handle * hoPtr)->max_connections(); } |]
 
-setMaxConnections :: TorrentHandle -> C.CInt -> IO ()
-setMaxConnections ho max_connections =
-  withPtr ho $ \hoPtr ->
+setTorrentHandleMaxConnections :: MonadIO m =>  TorrentHandle -> C.CInt -> m ()
+setTorrentHandleMaxConnections ho max_connections =
+  liftIO . withPtr ho $ \hoPtr ->
   checkError [exceptU| { $(torrent_handle * hoPtr)->set_max_connections($(int max_connections)); } |]
 
-moveStorage :: TorrentHandle -> Text -> C.CInt -> IO ()
+moveStorage :: MonadIO m =>  TorrentHandle -> Text -> C.CInt -> m ()
 moveStorage ho save_path flags =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
     sp <- textToStdString save_path
     withPtr sp $ \sPtr ->
       checkError [exceptU| { $(torrent_handle * hoPtr)->move_storage(*$(string * sPtr), $(int flags)); } |]
 
-renameFile :: TorrentHandle -> C.CInt -> Text -> IO ()
+renameFile :: MonadIO m =>  TorrentHandle -> C.CInt -> Text -> m ()
 renameFile ho idx new_name =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
     nns <- textToStdString new_name
     withPtr nns $ \nnPtr ->
       checkError [exceptU| { $(torrent_handle * hoPtr)->rename_file($(int idx), *$(string * nnPtr)); } |]
 
-superSeeding :: TorrentHandle -> Bool -> IO ()
+superSeeding :: MonadIO m =>  TorrentHandle -> Bool -> m ()
 superSeeding ho on =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let on' = fromBool on
   checkError [exceptU| { $(torrent_handle * hoPtr)->super_seeding($(bool on')); } |]
 
 
-infoHash :: TorrentHandle -> IO Sha1Hash
+infoHash :: MonadIO m =>  TorrentHandle -> m Sha1Hash
 infoHash ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   alloca $ \shPtrPtr -> do
   checkError [exceptU|
                      {*$(sha1_hash ** shPtrPtr) = new sha1_hash($(torrent_handle * hoPtr)->info_hash());}
@@ -652,9 +659,9 @@ infoHash ho =
   fromPtr $ peek shPtrPtr
 
 -- TODO in libtorrent 1.1.0
--- getId :: TorrentHandle -> IO Word32
+-- getId :: MonadIO m =>  TorrentHandle -> m Word32
 -- getId ho =
---   withPtr ho $ \hoPtr ->
+--   liftIO . withPtr ho $ \hoPtr ->
 --   checkError [exceptU| uint32_t { $(torrent_handle * hoPtr)->id() } |]
 
 --    boost::shared_ptr<torrent> native_handle () const;

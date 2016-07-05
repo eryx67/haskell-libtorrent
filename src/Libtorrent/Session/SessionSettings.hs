@@ -364,6 +364,7 @@ module Libtorrent.Session.SessionSettings (SessionSettings
                                         , setInactiveUpRate
                                         ) where
 
+import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Data.Text (Text)
 import qualified Data.Text.Foreign as TF
 import           Foreign.C.Types (CInt)
@@ -390,37 +391,37 @@ C.using "namespace std"
 data SuggestMode =
   NoPieceSuggestions
   | SuggestReadCache
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 data ChokingAlgorithm =
   FixedSlotsChoker
   | AutoExpandChoker
   | RateBasedChoker
   | BittyrantChoker
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 data SeedChokingAlgorithm =
   RoundRobin
   | FastestUpload
   | AntiLeech
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 data IoBufferMode =
   EnableOsCache
   | DisableOsCacheForAlignedFiles
   | DisableOsCache
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 data DiskCacheAlgo =
   Lru
   | LargestContiguous
   | AvoidReadback
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 data BandwidthMixedAlgo =
   PreferTcp
   | PeerProportional
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 
 newtype SessionSettings = SessionSettings { unSessionSettings :: ForeignPtr (CType SessionSettings)}
@@ -438,587 +439,587 @@ instance FromPtr SessionSettings where
 instance WithPtr SessionSettings where
   withPtr (SessionSettings fptr) = withForeignPtr fptr
 
-newSessionSettings :: IO SessionSettings
+newSessionSettings :: MonadIO m =>  m SessionSettings
 newSessionSettings =
-  fromPtr [CU.exp| session_settings * { new session_settings() }|]
+  liftIO$ fromPtr [CU.exp| session_settings * { new session_settings() }|]
 
 
-getVersion :: SessionSettings -> IO CInt
+getVersion :: MonadIO m =>  SessionSettings -> m CInt
 getVersion ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->version } |]
 
-setVersion :: SessionSettings -> CInt -> IO ()
+setVersion :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setVersion ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->version = $(int val)} |]
 
-getUserAgent :: SessionSettings -> IO Text
+getUserAgent :: MonadIO m =>  SessionSettings -> m Text
 getUserAgent ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   res <- fromPtr [CU.exp| string * { new std::string($(session_settings * hoPtr)->user_agent) } |]
   stdStringToText res
 
-setUserAgent :: SessionSettings -> Text -> IO ()
+setUserAgent :: MonadIO m =>  SessionSettings -> Text -> m ()
 setUserAgent ho val =
-  TF.withCStringLen val $ \(cstr, len) -> do
+  liftIO .TF.withCStringLen val $ \(cstr, len) -> do
     let clen = fromIntegral len
     withPtr ho $ \hoPtr ->
       [CU.exp| void { $(session_settings * hoPtr)->user_agent = std::string($(const char * cstr), $(size_t clen))} |]
 
-getTrackerCompletionTimeout :: SessionSettings -> IO CInt
+getTrackerCompletionTimeout :: MonadIO m =>  SessionSettings -> m CInt
 getTrackerCompletionTimeout ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->tracker_completion_timeout } |]
 
-setTrackerCompletionTimeout :: SessionSettings -> CInt -> IO ()
+setTrackerCompletionTimeout :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setTrackerCompletionTimeout ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->tracker_completion_timeout = $(int val)} |]
 
-getTrackerReceiveTimeout :: SessionSettings -> IO CInt
+getTrackerReceiveTimeout :: MonadIO m =>  SessionSettings -> m CInt
 getTrackerReceiveTimeout ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->tracker_receive_timeout } |]
 
-setTrackerReceiveTimeout :: SessionSettings -> CInt -> IO ()
+setTrackerReceiveTimeout :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setTrackerReceiveTimeout ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->tracker_receive_timeout = $(int val)} |]
 
-getStopTrackerTimeout :: SessionSettings -> IO CInt
+getStopTrackerTimeout :: MonadIO m =>  SessionSettings -> m CInt
 getStopTrackerTimeout ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->stop_tracker_timeout } |]
 
-setStopTrackerTimeout :: SessionSettings -> CInt -> IO ()
+setStopTrackerTimeout :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setStopTrackerTimeout ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->stop_tracker_timeout = $(int val)} |]
 
-getTrackerMaximumResponseLength :: SessionSettings -> IO CInt
+getTrackerMaximumResponseLength :: MonadIO m =>  SessionSettings -> m CInt
 getTrackerMaximumResponseLength ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->tracker_maximum_response_length } |]
 
-setTrackerMaximumResponseLength :: SessionSettings -> CInt -> IO ()
+setTrackerMaximumResponseLength :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setTrackerMaximumResponseLength ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->tracker_maximum_response_length = $(int val)} |]
 
-getPieceTimeout :: SessionSettings -> IO CInt
+getPieceTimeout :: MonadIO m =>  SessionSettings -> m CInt
 getPieceTimeout ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->piece_timeout } |]
 
-setPieceTimeout :: SessionSettings -> CInt -> IO ()
+setPieceTimeout :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setPieceTimeout ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->piece_timeout = $(int val)} |]
 
-getRequestTimeout :: SessionSettings -> IO CInt
+getRequestTimeout :: MonadIO m =>  SessionSettings -> m CInt
 getRequestTimeout ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->request_timeout } |]
 
-setRequestTimeout :: SessionSettings -> CInt -> IO ()
+setRequestTimeout :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setRequestTimeout ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->request_timeout = $(int val)} |]
 
-getRequestQueueTime :: SessionSettings -> IO CInt
+getRequestQueueTime :: MonadIO m =>  SessionSettings -> m CInt
 getRequestQueueTime ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->request_queue_time } |]
 
-setRequestQueueTime :: SessionSettings -> CInt -> IO ()
+setRequestQueueTime :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setRequestQueueTime ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->request_queue_time = $(int val)} |]
 
-getMaxAllowedInRequestQueue :: SessionSettings -> IO CInt
+getMaxAllowedInRequestQueue :: MonadIO m =>  SessionSettings -> m CInt
 getMaxAllowedInRequestQueue ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->max_allowed_in_request_queue } |]
 
-setMaxAllowedInRequestQueue :: SessionSettings -> CInt -> IO ()
+setMaxAllowedInRequestQueue :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setMaxAllowedInRequestQueue ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->max_allowed_in_request_queue = $(int val)} |]
 
-getMaxOutRequestQueue :: SessionSettings -> IO CInt
+getMaxOutRequestQueue :: MonadIO m =>  SessionSettings -> m CInt
 getMaxOutRequestQueue ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->max_out_request_queue } |]
 
-setMaxOutRequestQueue :: SessionSettings -> CInt -> IO ()
+setMaxOutRequestQueue :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setMaxOutRequestQueue ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->max_out_request_queue = $(int val)} |]
 
-getWholePiecesThreshold :: SessionSettings -> IO CInt
+getWholePiecesThreshold :: MonadIO m =>  SessionSettings -> m CInt
 getWholePiecesThreshold ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->whole_pieces_threshold } |]
 
-setWholePiecesThreshold :: SessionSettings -> CInt -> IO ()
+setWholePiecesThreshold :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setWholePiecesThreshold ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->whole_pieces_threshold = $(int val)} |]
 
-getPeerTimeout :: SessionSettings -> IO CInt
+getPeerTimeout :: MonadIO m =>  SessionSettings -> m CInt
 getPeerTimeout ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->peer_timeout } |]
 
-setPeerTimeout :: SessionSettings -> CInt -> IO ()
+setPeerTimeout :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setPeerTimeout ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->peer_timeout = $(int val)} |]
 
-getUrlseedTimeout :: SessionSettings -> IO CInt
+getUrlseedTimeout :: MonadIO m =>  SessionSettings -> m CInt
 getUrlseedTimeout ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->urlseed_timeout } |]
 
-setUrlseedTimeout :: SessionSettings -> CInt -> IO ()
+setUrlseedTimeout :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setUrlseedTimeout ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->urlseed_timeout = $(int val)} |]
 
-getUrlseedPipelineSize :: SessionSettings -> IO CInt
+getUrlseedPipelineSize :: MonadIO m =>  SessionSettings -> m CInt
 getUrlseedPipelineSize ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->urlseed_pipeline_size } |]
 
-setUrlseedPipelineSize :: SessionSettings -> CInt -> IO ()
+setUrlseedPipelineSize :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setUrlseedPipelineSize ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->urlseed_pipeline_size = $(int val)} |]
 
-getUrlseedWaitRetry :: SessionSettings -> IO CInt
+getUrlseedWaitRetry :: MonadIO m =>  SessionSettings -> m CInt
 getUrlseedWaitRetry ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->urlseed_wait_retry } |]
 
-setUrlseedWaitRetry :: SessionSettings -> CInt -> IO ()
+setUrlseedWaitRetry :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setUrlseedWaitRetry ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->urlseed_wait_retry = $(int val)} |]
 
-getFilePoolSize :: SessionSettings -> IO CInt
+getFilePoolSize :: MonadIO m =>  SessionSettings -> m CInt
 getFilePoolSize ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->file_pool_size } |]
 
-setFilePoolSize :: SessionSettings -> CInt -> IO ()
+setFilePoolSize :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setFilePoolSize ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->file_pool_size = $(int val)} |]
 
-getAllowMultipleConnectionsPerIp :: SessionSettings -> IO Bool
+getAllowMultipleConnectionsPerIp :: MonadIO m =>  SessionSettings -> m Bool
 getAllowMultipleConnectionsPerIp ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->allow_multiple_connections_per_ip } |]
 
-setAllowMultipleConnectionsPerIp :: SessionSettings -> Bool -> IO ()
+setAllowMultipleConnectionsPerIp :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setAllowMultipleConnectionsPerIp ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->allow_multiple_connections_per_ip = $(bool val')} |]
 
-getMaxFailcount :: SessionSettings -> IO CInt
+getMaxFailcount :: MonadIO m =>  SessionSettings -> m CInt
 getMaxFailcount ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->max_failcount } |]
 
-setMaxFailcount :: SessionSettings -> CInt -> IO ()
+setMaxFailcount :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setMaxFailcount ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->max_failcount = $(int val)} |]
 
-getMinReconnectTime :: SessionSettings -> IO CInt
+getMinReconnectTime :: MonadIO m =>  SessionSettings -> m CInt
 getMinReconnectTime ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->min_reconnect_time } |]
 
-setMinReconnectTime :: SessionSettings -> CInt -> IO ()
+setMinReconnectTime :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setMinReconnectTime ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->min_reconnect_time = $(int val)} |]
 
-getPeerConnectTimeout :: SessionSettings -> IO CInt
+getPeerConnectTimeout :: MonadIO m =>  SessionSettings -> m CInt
 getPeerConnectTimeout ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->peer_connect_timeout } |]
 
-setPeerConnectTimeout :: SessionSettings -> CInt -> IO ()
+setPeerConnectTimeout :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setPeerConnectTimeout ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->peer_connect_timeout = $(int val)} |]
 
-getIgnoreLimitsOnLocalNetwork :: SessionSettings -> IO Bool
+getIgnoreLimitsOnLocalNetwork :: MonadIO m =>  SessionSettings -> m Bool
 getIgnoreLimitsOnLocalNetwork ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->ignore_limits_on_local_network } |]
 
-setIgnoreLimitsOnLocalNetwork :: SessionSettings -> Bool -> IO ()
+setIgnoreLimitsOnLocalNetwork :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setIgnoreLimitsOnLocalNetwork ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->ignore_limits_on_local_network = $(bool val')} |]
 
-getConnectionSpeed :: SessionSettings -> IO CInt
+getConnectionSpeed :: MonadIO m =>  SessionSettings -> m CInt
 getConnectionSpeed ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->connection_speed } |]
 
-setConnectionSpeed :: SessionSettings -> CInt -> IO ()
+setConnectionSpeed :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setConnectionSpeed ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->connection_speed = $(int val)} |]
 
-getSendRedundantHave :: SessionSettings -> IO Bool
+getSendRedundantHave :: MonadIO m =>  SessionSettings -> m Bool
 getSendRedundantHave ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->send_redundant_have } |]
 
-setSendRedundantHave :: SessionSettings -> Bool -> IO ()
+setSendRedundantHave :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setSendRedundantHave ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->send_redundant_have = $(bool val')} |]
 
-getLazyBitfields :: SessionSettings -> IO Bool
+getLazyBitfields :: MonadIO m =>  SessionSettings -> m Bool
 getLazyBitfields ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->lazy_bitfields } |]
 
-setLazyBitfields :: SessionSettings -> Bool -> IO ()
+setLazyBitfields :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setLazyBitfields ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->lazy_bitfields = $(bool val')} |]
 
-getInactivityTimeout :: SessionSettings -> IO CInt
+getInactivityTimeout :: MonadIO m =>  SessionSettings -> m CInt
 getInactivityTimeout ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->inactivity_timeout } |]
 
-setInactivityTimeout :: SessionSettings -> CInt -> IO ()
+setInactivityTimeout :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setInactivityTimeout ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->inactivity_timeout = $(int val)} |]
 
-getUnchokeInterval :: SessionSettings -> IO CInt
+getUnchokeInterval :: MonadIO m =>  SessionSettings -> m CInt
 getUnchokeInterval ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->unchoke_interval } |]
 
-setUnchokeInterval :: SessionSettings -> CInt -> IO ()
+setUnchokeInterval :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setUnchokeInterval ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->unchoke_interval = $(int val)} |]
 
-getOptimisticUnchokeInterval :: SessionSettings -> IO CInt
+getOptimisticUnchokeInterval :: MonadIO m =>  SessionSettings -> m CInt
 getOptimisticUnchokeInterval ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->optimistic_unchoke_interval } |]
 
-setOptimisticUnchokeInterval :: SessionSettings -> CInt -> IO ()
+setOptimisticUnchokeInterval :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setOptimisticUnchokeInterval ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->optimistic_unchoke_interval = $(int val)} |]
 
-getAnnounceIp :: SessionSettings -> IO Text
+getAnnounceIp :: MonadIO m =>  SessionSettings -> m Text
 getAnnounceIp ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   res <- fromPtr [CU.exp| string * { new std::string($(session_settings * hoPtr)->announce_ip) } |]
   stdStringToText res
 
-setAnnounceIp :: SessionSettings -> Text -> IO ()
+setAnnounceIp :: MonadIO m =>  SessionSettings -> Text -> m ()
 setAnnounceIp ho val =
-  TF.withCStringLen val $ \(cstr, len) -> do
+  liftIO . TF.withCStringLen val $ \(cstr, len) -> do
     let clen = fromIntegral len
-    withPtr ho $ \hoPtr ->
+    liftIO . withPtr ho $ \hoPtr ->
       [CU.exp| void { $(session_settings * hoPtr)->announce_ip = std::string($(const char * cstr), $(size_t clen))} |]
 
-getNumWant :: SessionSettings -> IO CInt
+getNumWant :: MonadIO m =>  SessionSettings -> m CInt
 getNumWant ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->num_want } |]
 
-setNumWant :: SessionSettings -> CInt -> IO ()
+setNumWant :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setNumWant ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->num_want = $(int val)} |]
 
-getInitialPickerThreshold :: SessionSettings -> IO CInt
+getInitialPickerThreshold :: MonadIO m =>  SessionSettings -> m CInt
 getInitialPickerThreshold ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->initial_picker_threshold } |]
 
-setInitialPickerThreshold :: SessionSettings -> CInt -> IO ()
+setInitialPickerThreshold :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setInitialPickerThreshold ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->initial_picker_threshold = $(int val)} |]
 
-getAllowedFastSetSize :: SessionSettings -> IO CInt
+getAllowedFastSetSize :: MonadIO m =>  SessionSettings -> m CInt
 getAllowedFastSetSize ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->allowed_fast_set_size } |]
 
-setAllowedFastSetSize :: SessionSettings -> CInt -> IO ()
+setAllowedFastSetSize :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setAllowedFastSetSize ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->allowed_fast_set_size = $(int val)} |]
 
-getSuggestMode :: SessionSettings -> IO SuggestMode
+getSuggestMode :: MonadIO m =>  SessionSettings -> m SuggestMode
 getSuggestMode ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   (toEnum . fromIntegral) <$> [CU.exp| int { $(session_settings * hoPtr)->suggest_mode } |]
 
-setSuggestMode :: SessionSettings -> SuggestMode -> IO ()
+setSuggestMode :: MonadIO m =>  SessionSettings -> SuggestMode -> m ()
 setSuggestMode ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromIntegral $ fromEnum val
   [CU.exp| void { $(session_settings * hoPtr)->suggest_mode = $(int val')} |]
 
-getMaxQueuedDiskBytes :: SessionSettings -> IO CInt
+getMaxQueuedDiskBytes :: MonadIO m =>  SessionSettings -> m CInt
 getMaxQueuedDiskBytes ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->max_queued_disk_bytes } |]
 
-setMaxQueuedDiskBytes :: SessionSettings -> CInt -> IO ()
+setMaxQueuedDiskBytes :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setMaxQueuedDiskBytes ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->max_queued_disk_bytes = $(int val)} |]
 
-getMaxQueuedDiskBytesLowWatermark :: SessionSettings -> IO CInt
+getMaxQueuedDiskBytesLowWatermark :: MonadIO m =>  SessionSettings -> m CInt
 getMaxQueuedDiskBytesLowWatermark ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->max_queued_disk_bytes_low_watermark } |]
 
-setMaxQueuedDiskBytesLowWatermark :: SessionSettings -> CInt -> IO ()
+setMaxQueuedDiskBytesLowWatermark :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setMaxQueuedDiskBytesLowWatermark ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->max_queued_disk_bytes_low_watermark = $(int val)} |]
 
-getHandshakeTimeout :: SessionSettings -> IO CInt
+getHandshakeTimeout :: MonadIO m =>  SessionSettings -> m CInt
 getHandshakeTimeout ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->handshake_timeout } |]
 
-setHandshakeTimeout :: SessionSettings -> CInt -> IO ()
+setHandshakeTimeout :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setHandshakeTimeout ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->handshake_timeout = $(int val)} |]
 
-getUseDhtAsFallback :: SessionSettings -> IO Bool
+getUseDhtAsFallback :: MonadIO m =>  SessionSettings -> m Bool
 getUseDhtAsFallback ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->use_dht_as_fallback } |]
 
-setUseDhtAsFallback :: SessionSettings -> Bool -> IO ()
+setUseDhtAsFallback :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setUseDhtAsFallback ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->use_dht_as_fallback = $(bool val')} |]
 
-getFreeTorrentHashes :: SessionSettings -> IO Bool
+getFreeTorrentHashes :: MonadIO m =>  SessionSettings -> m Bool
 getFreeTorrentHashes ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->free_torrent_hashes } |]
 
-setFreeTorrentHashes :: SessionSettings -> Bool -> IO ()
+setFreeTorrentHashes :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setFreeTorrentHashes ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->free_torrent_hashes = $(bool val')} |]
 
-getUpnpIgnoreNonrouters :: SessionSettings -> IO Bool
+getUpnpIgnoreNonrouters :: MonadIO m =>  SessionSettings -> m Bool
 getUpnpIgnoreNonrouters ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->upnp_ignore_nonrouters } |]
 
-setUpnpIgnoreNonrouters :: SessionSettings -> Bool -> IO ()
+setUpnpIgnoreNonrouters :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setUpnpIgnoreNonrouters ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->upnp_ignore_nonrouters = $(bool val')} |]
 
-getSendBufferLowWatermark :: SessionSettings -> IO CInt
+getSendBufferLowWatermark :: MonadIO m =>  SessionSettings -> m CInt
 getSendBufferLowWatermark ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->send_buffer_low_watermark } |]
 
-setSendBufferLowWatermark :: SessionSettings -> CInt -> IO ()
+setSendBufferLowWatermark :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setSendBufferLowWatermark ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->send_buffer_low_watermark = $(int val)} |]
 
-getSendBufferWatermark :: SessionSettings -> IO CInt
+getSendBufferWatermark :: MonadIO m =>  SessionSettings -> m CInt
 getSendBufferWatermark ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->send_buffer_watermark } |]
 
-setSendBufferWatermark :: SessionSettings -> CInt -> IO ()
+setSendBufferWatermark :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setSendBufferWatermark ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->send_buffer_watermark = $(int val)} |]
 
-getSendBufferWatermarkFactor :: SessionSettings -> IO CInt
+getSendBufferWatermarkFactor :: MonadIO m =>  SessionSettings -> m CInt
 getSendBufferWatermarkFactor ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->send_buffer_watermark_factor } |]
 
-setSendBufferWatermarkFactor :: SessionSettings -> CInt -> IO ()
+setSendBufferWatermarkFactor :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setSendBufferWatermarkFactor ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->send_buffer_watermark_factor = $(int val)} |]
 
-getChokingAlgorithm :: SessionSettings -> IO ChokingAlgorithm
+getChokingAlgorithm :: MonadIO m =>  SessionSettings -> m ChokingAlgorithm
 getChokingAlgorithm ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   (toEnum . fromIntegral) <$> [CU.exp| int { $(session_settings * hoPtr)->choking_algorithm } |]
 
-setChokingAlgorithm :: SessionSettings -> ChokingAlgorithm -> IO ()
+setChokingAlgorithm :: MonadIO m =>  SessionSettings -> ChokingAlgorithm -> m ()
 setChokingAlgorithm ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromIntegral $ fromEnum val
   [CU.exp| void { $(session_settings * hoPtr)->choking_algorithm = $(int val')} |]
 
-getSeedChokingAlgorithm :: SessionSettings -> IO SeedChokingAlgorithm
+getSeedChokingAlgorithm :: MonadIO m =>  SessionSettings -> m SeedChokingAlgorithm
 getSeedChokingAlgorithm ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   (toEnum . fromIntegral) <$> [CU.exp| int { $(session_settings * hoPtr)->seed_choking_algorithm } |]
 
-setSeedChokingAlgorithm :: SessionSettings -> CInt -> IO ()
+setSeedChokingAlgorithm :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setSeedChokingAlgorithm ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromIntegral $ fromEnum val
   [CU.exp| void { $(session_settings * hoPtr)->seed_choking_algorithm = $(int val')} |]
 
-getUseParoleMode :: SessionSettings -> IO Bool
+getUseParoleMode :: MonadIO m =>  SessionSettings -> m Bool
 getUseParoleMode ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->use_parole_mode } |]
 
-setUseParoleMode :: SessionSettings -> Bool -> IO ()
+setUseParoleMode :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setUseParoleMode ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->use_parole_mode = $(bool val')} |]
 
-getCacheSize :: SessionSettings -> IO CInt
+getCacheSize :: MonadIO m =>  SessionSettings -> m CInt
 getCacheSize ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->cache_size } |]
 
-setCacheSize :: SessionSettings -> CInt -> IO ()
+setCacheSize :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setCacheSize ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->cache_size = $(int val)} |]
 
-getCacheBufferChunkSize :: SessionSettings -> IO CInt
+getCacheBufferChunkSize :: MonadIO m =>  SessionSettings -> m CInt
 getCacheBufferChunkSize ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->cache_buffer_chunk_size } |]
 
-setCacheBufferChunkSize :: SessionSettings -> CInt -> IO ()
+setCacheBufferChunkSize :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setCacheBufferChunkSize ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->cache_buffer_chunk_size = $(int val)} |]
 
-getCacheExpiry :: SessionSettings -> IO CInt
+getCacheExpiry :: MonadIO m =>  SessionSettings -> m CInt
 getCacheExpiry ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->cache_expiry } |]
 
-setCacheExpiry :: SessionSettings -> CInt -> IO ()
+setCacheExpiry :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setCacheExpiry ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->cache_expiry = $(int val)} |]
 
-getUseReadCache :: SessionSettings -> IO Bool
+getUseReadCache :: MonadIO m =>  SessionSettings -> m Bool
 getUseReadCache ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->use_read_cache } |]
 
-setUseReadCache :: SessionSettings -> Bool -> IO ()
+setUseReadCache :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setUseReadCache ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->use_read_cache = $(bool val')} |]
 
-getExplicitReadCache :: SessionSettings -> IO Bool
+getExplicitReadCache :: MonadIO m =>  SessionSettings -> m Bool
 getExplicitReadCache ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->explicit_read_cache } |]
 
-setExplicitReadCache :: SessionSettings -> Bool -> IO ()
+setExplicitReadCache :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setExplicitReadCache ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->explicit_read_cache = $(bool val')} |]
 
-getExplicitCacheInterval :: SessionSettings -> IO CInt
+getExplicitCacheInterval :: MonadIO m =>  SessionSettings -> m CInt
 getExplicitCacheInterval ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->explicit_cache_interval } |]
 
-setExplicitCacheInterval :: SessionSettings -> CInt -> IO ()
+setExplicitCacheInterval :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setExplicitCacheInterval ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->explicit_cache_interval = $(int val)} |]
 
-getDiskIoWriteMode :: SessionSettings -> IO IoBufferMode
+getDiskIoWriteMode :: MonadIO m =>  SessionSettings -> m IoBufferMode
 getDiskIoWriteMode ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   (toEnum . fromIntegral) <$> [CU.exp| int { $(session_settings * hoPtr)->disk_io_write_mode } |]
 
-setDiskIoWriteMode :: SessionSettings -> IoBufferMode -> IO ()
+setDiskIoWriteMode :: MonadIO m =>  SessionSettings -> IoBufferMode -> m ()
 setDiskIoWriteMode ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromIntegral $ fromEnum val
   [CU.exp| void { $(session_settings * hoPtr)->disk_io_write_mode = $(int val')} |]
 
-getDiskIoReadMode :: SessionSettings -> IO IoBufferMode
+getDiskIoReadMode :: MonadIO m =>  SessionSettings -> m IoBufferMode
 getDiskIoReadMode ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   (toEnum . fromIntegral) <$> [CU.exp| int { $(session_settings * hoPtr)->disk_io_read_mode } |]
 
-setDiskIoReadMode :: SessionSettings -> CInt -> IO ()
+setDiskIoReadMode :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setDiskIoReadMode ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromIntegral $ fromEnum val
   [CU.exp| void { $(session_settings * hoPtr)->disk_io_read_mode = $(int val')} |]
 
-getCoalesceReads :: SessionSettings -> IO Bool
+getCoalesceReads :: MonadIO m =>  SessionSettings -> m Bool
 getCoalesceReads ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->coalesce_reads } |]
 
-setCoalesceReads :: SessionSettings -> Bool -> IO ()
+setCoalesceReads :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setCoalesceReads ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->coalesce_reads = $(bool val')} |]
 
-getCoalesceWrites :: SessionSettings -> IO Bool
+getCoalesceWrites :: MonadIO m =>  SessionSettings -> m Bool
 getCoalesceWrites ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->coalesce_writes } |]
 
-setCoalesceWrites :: SessionSettings -> Bool -> IO ()
+setCoalesceWrites :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setCoalesceWrites ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->coalesce_writes = $(bool val')} |]
 
-getOutgoingPorts :: SessionSettings -> IO (CInt, CInt)
+getOutgoingPorts :: MonadIO m =>  SessionSettings -> m (CInt, CInt)
 getOutgoingPorts ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   C.withPtrs_ $ \(fromPtr', toPtr') ->
   [CU.block| void {
       *$(int * fromPtr') = $(session_settings * hoPtr)->outgoing_ports.first;
@@ -1026,1240 +1027,1240 @@ getOutgoingPorts ho =
      }
   |]
 
-setOutgoingPorts :: SessionSettings -> (CInt, CInt) -> IO ()
+setOutgoingPorts :: MonadIO m =>  SessionSettings -> (CInt, CInt) -> m ()
 setOutgoingPorts ho (fromPtr', toPtr') =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->outgoing_ports = std::make_pair($(int fromPtr'), $(int toPtr')) } |]
 
-getPeerTos :: SessionSettings -> IO C.CChar
+getPeerTos :: MonadIO m =>  SessionSettings -> m C.CChar
 getPeerTos ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| char { $(session_settings * hoPtr)->peer_tos } |]
 
-setPeerTos :: SessionSettings -> C.CChar -> IO ()
+setPeerTos :: MonadIO m =>  SessionSettings -> C.CChar -> m ()
 setPeerTos ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->peer_tos = $(char val)} |]
 
-getActiveDownloads :: SessionSettings -> IO CInt
+getActiveDownloads :: MonadIO m =>  SessionSettings -> m CInt
 getActiveDownloads ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->active_downloads } |]
 
-setActiveDownloads :: SessionSettings -> CInt -> IO ()
+setActiveDownloads :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setActiveDownloads ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->active_downloads = $(int val)} |]
 
-getActiveSeeds :: SessionSettings -> IO CInt
+getActiveSeeds :: MonadIO m =>  SessionSettings -> m CInt
 getActiveSeeds ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->active_seeds } |]
 
-setActiveSeeds :: SessionSettings -> CInt -> IO ()
+setActiveSeeds :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setActiveSeeds ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->active_seeds = $(int val)} |]
 
-getActiveDhtLimit :: SessionSettings -> IO CInt
+getActiveDhtLimit :: MonadIO m =>  SessionSettings -> m CInt
 getActiveDhtLimit ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->active_dht_limit } |]
 
-setActiveDhtLimit :: SessionSettings -> CInt -> IO ()
+setActiveDhtLimit :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setActiveDhtLimit ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session_settings * hoPtr)->active_dht_limit = $(int val)} |]
 
-getActiveTrackerLimit :: SessionSettings -> IO CInt
+getActiveTrackerLimit :: MonadIO m =>  SessionSettings -> m CInt
 getActiveTrackerLimit ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->active_tracker_limit } |]
 
-setActiveTrackerLimit :: SessionSettings -> CInt -> IO ()
+setActiveTrackerLimit :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setActiveTrackerLimit ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->active_tracker_limit = $(int val)} |]
 
-getActiveLsdLimit :: SessionSettings -> IO CInt
+getActiveLsdLimit :: MonadIO m =>  SessionSettings -> m CInt
 getActiveLsdLimit ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->active_lsd_limit } |]
 
-setActiveLsdLimit :: SessionSettings -> CInt -> IO ()
+setActiveLsdLimit :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setActiveLsdLimit ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->active_lsd_limit = $(int val)} |]
 
-getActiveLimit :: SessionSettings -> IO CInt
+getActiveLimit :: MonadIO m =>  SessionSettings -> m CInt
 getActiveLimit ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->active_limit } |]
 
-setActiveLimit :: SessionSettings -> CInt -> IO ()
+setActiveLimit :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setActiveLimit ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->active_limit = $(int val)} |]
 
-getAutoManagePreferSeeds :: SessionSettings -> IO Bool
+getAutoManagePreferSeeds :: MonadIO m =>  SessionSettings -> m Bool
 getAutoManagePreferSeeds ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->auto_manage_prefer_seeds } |]
 
-setAutoManagePreferSeeds :: SessionSettings -> Bool -> IO ()
+setAutoManagePreferSeeds :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setAutoManagePreferSeeds ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->auto_manage_prefer_seeds = $(bool val')} |]
 
-getDontCountSlowTorrents :: SessionSettings -> IO Bool
+getDontCountSlowTorrents :: MonadIO m =>  SessionSettings -> m Bool
 getDontCountSlowTorrents ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->dont_count_slow_torrents } |]
 
-setDontCountSlowTorrents :: SessionSettings -> Bool -> IO ()
+setDontCountSlowTorrents :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setDontCountSlowTorrents ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->dont_count_slow_torrents = $(bool val')} |]
 
-getAutoManageInterval :: SessionSettings -> IO CInt
+getAutoManageInterval :: MonadIO m =>  SessionSettings -> m CInt
 getAutoManageInterval ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->auto_manage_interval } |]
 
-setAutoManageInterval :: SessionSettings -> CInt -> IO ()
+setAutoManageInterval :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setAutoManageInterval ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->auto_manage_interval = $(int val)} |]
 
-getShareRatioLimit :: SessionSettings -> IO C.CFloat
+getShareRatioLimit :: MonadIO m =>  SessionSettings -> m C.CFloat
 getShareRatioLimit ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| float { $(session_settings * hoPtr)->share_ratio_limit } |]
 
-setShareRatioLimit :: SessionSettings -> C.CFloat -> IO ()
+setShareRatioLimit :: MonadIO m =>  SessionSettings -> C.CFloat -> m ()
 setShareRatioLimit ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->share_ratio_limit = $(float val)} |]
 
-getSeedTimeRatioLimit :: SessionSettings -> IO C.CFloat
+getSeedTimeRatioLimit :: MonadIO m =>  SessionSettings -> m C.CFloat
 getSeedTimeRatioLimit ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| float { $(session_settings * hoPtr)->seed_time_ratio_limit } |]
 
-setSeedTimeRatioLimit :: SessionSettings -> C.CFloat -> IO ()
+setSeedTimeRatioLimit :: MonadIO m =>  SessionSettings -> C.CFloat -> m ()
 setSeedTimeRatioLimit ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->seed_time_ratio_limit = $(float val)} |]
 
-getSeedTimeLimit :: SessionSettings -> IO CInt
+getSeedTimeLimit :: MonadIO m =>  SessionSettings -> m CInt
 getSeedTimeLimit ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->seed_time_limit } |]
 
-setSeedTimeLimit :: SessionSettings -> CInt -> IO ()
+setSeedTimeLimit :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setSeedTimeLimit ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->seed_time_limit = $(int val)} |]
 
-getPeerTurnoverInterval :: SessionSettings -> IO CInt
+getPeerTurnoverInterval :: MonadIO m =>  SessionSettings -> m CInt
 getPeerTurnoverInterval ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->peer_turnover_interval } |]
 
-setPeerTurnoverInterval :: SessionSettings -> CInt -> IO ()
+setPeerTurnoverInterval :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setPeerTurnoverInterval ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->peer_turnover_interval = $(int val)} |]
 
-getPeerTurnover :: SessionSettings -> IO C.CFloat
+getPeerTurnover :: MonadIO m =>  SessionSettings -> m C.CFloat
 getPeerTurnover ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| float { $(session_settings * hoPtr)->peer_turnover } |]
 
-setPeerTurnover :: SessionSettings -> C.CFloat -> IO ()
+setPeerTurnover :: MonadIO m =>  SessionSettings -> C.CFloat -> m ()
 setPeerTurnover ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->peer_turnover = $(float val)} |]
 
-getPeerTurnoverCutoff :: SessionSettings -> IO C.CFloat
+getPeerTurnoverCutoff :: MonadIO m =>  SessionSettings -> m C.CFloat
 getPeerTurnoverCutoff ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| float { $(session_settings * hoPtr)->peer_turnover_cutoff } |]
 
-setPeerTurnoverCutoff :: SessionSettings -> C.CFloat -> IO ()
+setPeerTurnoverCutoff :: MonadIO m =>  SessionSettings -> C.CFloat -> m ()
 setPeerTurnoverCutoff ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->peer_turnover_cutoff = $(float val)} |]
 
-getCloseRedundantConnections :: SessionSettings -> IO Bool
+getCloseRedundantConnections :: MonadIO m =>  SessionSettings -> m Bool
 getCloseRedundantConnections ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->close_redundant_connections } |]
 
-setCloseRedundantConnections :: SessionSettings -> Bool -> IO ()
+setCloseRedundantConnections :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setCloseRedundantConnections ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->close_redundant_connections = $(bool val')} |]
 
-getAutoScrapeInterval :: SessionSettings -> IO CInt
+getAutoScrapeInterval :: MonadIO m =>  SessionSettings -> m CInt
 getAutoScrapeInterval ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->auto_scrape_interval } |]
 
-setAutoScrapeInterval :: SessionSettings -> CInt -> IO ()
+setAutoScrapeInterval :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setAutoScrapeInterval ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->auto_scrape_interval = $(int val)} |]
 
-getAutoScrapeMinInterval :: SessionSettings -> IO CInt
+getAutoScrapeMinInterval :: MonadIO m =>  SessionSettings -> m CInt
 getAutoScrapeMinInterval ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->auto_scrape_min_interval } |]
 
-setAutoScrapeMinInterval :: SessionSettings -> CInt -> IO ()
+setAutoScrapeMinInterval :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setAutoScrapeMinInterval ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->auto_scrape_min_interval = $(int val)} |]
 
-getMaxPeerlistSize :: SessionSettings -> IO CInt
+getMaxPeerlistSize :: MonadIO m =>  SessionSettings -> m CInt
 getMaxPeerlistSize ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->max_peerlist_size } |]
 
-setMaxPeerlistSize :: SessionSettings -> CInt -> IO ()
+setMaxPeerlistSize :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setMaxPeerlistSize ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->max_peerlist_size = $(int val)} |]
 
-getMaxPausedPeerlistSize :: SessionSettings -> IO CInt
+getMaxPausedPeerlistSize :: MonadIO m =>  SessionSettings -> m CInt
 getMaxPausedPeerlistSize ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->max_paused_peerlist_size } |]
 
-setMaxPausedPeerlistSize :: SessionSettings -> CInt -> IO ()
+setMaxPausedPeerlistSize :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setMaxPausedPeerlistSize ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->max_paused_peerlist_size = $(int val)} |]
 
-getMinAnnounceInterval :: SessionSettings -> IO CInt
+getMinAnnounceInterval :: MonadIO m =>  SessionSettings -> m CInt
 getMinAnnounceInterval ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->min_announce_interval } |]
 
-setMinAnnounceInterval :: SessionSettings -> CInt -> IO ()
+setMinAnnounceInterval :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setMinAnnounceInterval ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->min_announce_interval = $(int val)} |]
 
-getPrioritizePartialPieces :: SessionSettings -> IO Bool
+getPrioritizePartialPieces :: MonadIO m =>  SessionSettings -> m Bool
 getPrioritizePartialPieces ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->prioritize_partial_pieces } |]
 
-setPrioritizePartialPieces :: SessionSettings -> Bool -> IO ()
+setPrioritizePartialPieces :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setPrioritizePartialPieces ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->prioritize_partial_pieces = $(bool val')} |]
 
-getAutoManageStartup :: SessionSettings -> IO CInt
+getAutoManageStartup :: MonadIO m =>  SessionSettings -> m CInt
 getAutoManageStartup ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->auto_manage_startup } |]
 
-setAutoManageStartup :: SessionSettings -> CInt -> IO ()
+setAutoManageStartup :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setAutoManageStartup ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->auto_manage_startup = $(int val)} |]
 
-getRateLimitIpOverhead :: SessionSettings -> IO Bool
+getRateLimitIpOverhead :: MonadIO m =>  SessionSettings -> m Bool
 getRateLimitIpOverhead ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->rate_limit_ip_overhead } |]
 
-setRateLimitIpOverhead :: SessionSettings -> Bool -> IO ()
+setRateLimitIpOverhead :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setRateLimitIpOverhead ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->rate_limit_ip_overhead = $(bool val')} |]
 
-getAnnounceToAllTrackers :: SessionSettings -> IO Bool
+getAnnounceToAllTrackers :: MonadIO m =>  SessionSettings -> m Bool
 getAnnounceToAllTrackers ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->announce_to_all_trackers } |]
 
-setAnnounceToAllTrackers :: SessionSettings -> Bool -> IO ()
+setAnnounceToAllTrackers :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setAnnounceToAllTrackers ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->announce_to_all_trackers = $(bool val')} |]
 
-getAnnounceToAllTiers :: SessionSettings -> IO Bool
+getAnnounceToAllTiers :: MonadIO m =>  SessionSettings -> m Bool
 getAnnounceToAllTiers ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->announce_to_all_tiers } |]
 
-setAnnounceToAllTiers :: SessionSettings -> Bool -> IO ()
+setAnnounceToAllTiers :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setAnnounceToAllTiers ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->announce_to_all_tiers = $(bool val')} |]
 
-getPreferUdpTrackers :: SessionSettings -> IO Bool
+getPreferUdpTrackers :: MonadIO m =>  SessionSettings -> m Bool
 getPreferUdpTrackers ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->prefer_udp_trackers } |]
 
-setPreferUdpTrackers :: SessionSettings -> Bool -> IO ()
+setPreferUdpTrackers :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setPreferUdpTrackers ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->prefer_udp_trackers = $(bool val')} |]
 
-getStrictSuperSeeding :: SessionSettings -> IO Bool
+getStrictSuperSeeding :: MonadIO m =>  SessionSettings -> m Bool
 getStrictSuperSeeding ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->strict_super_seeding } |]
 
-setStrictSuperSeeding :: SessionSettings -> Bool -> IO ()
+setStrictSuperSeeding :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setStrictSuperSeeding ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->strict_super_seeding = $(bool val')} |]
 
-getSeedingPieceQuota :: SessionSettings -> IO CInt
+getSeedingPieceQuota :: MonadIO m =>  SessionSettings -> m CInt
 getSeedingPieceQuota ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->seeding_piece_quota } |]
 
-setSeedingPieceQuota :: SessionSettings -> CInt -> IO ()
+setSeedingPieceQuota :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setSeedingPieceQuota ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->seeding_piece_quota = $(int val)} |]
 
-getMaxSparseRegions :: SessionSettings -> IO CInt
+getMaxSparseRegions :: MonadIO m =>  SessionSettings -> m CInt
 getMaxSparseRegions ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->max_sparse_regions } |]
 
-setMaxSparseRegions :: SessionSettings -> CInt -> IO ()
+setMaxSparseRegions :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setMaxSparseRegions ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->max_sparse_regions = $(int val)} |]
 
-getLockDiskCache :: SessionSettings -> IO Bool
+getLockDiskCache :: MonadIO m =>  SessionSettings -> m Bool
 getLockDiskCache ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->lock_disk_cache } |]
 
-setLockDiskCache :: SessionSettings -> Bool -> IO ()
+setLockDiskCache :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setLockDiskCache ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->lock_disk_cache = $(bool val')} |]
 
-getMaxRejects :: SessionSettings -> IO CInt
+getMaxRejects :: MonadIO m =>  SessionSettings -> m CInt
 getMaxRejects ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->max_rejects } |]
 
-setMaxRejects :: SessionSettings -> CInt -> IO ()
+setMaxRejects :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setMaxRejects ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->max_rejects = $(int val)} |]
 
-getRecvSocketBufferSize :: SessionSettings -> IO CInt
+getRecvSocketBufferSize :: MonadIO m =>  SessionSettings -> m CInt
 getRecvSocketBufferSize ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->recv_socket_buffer_size } |]
 
-setRecvSocketBufferSize :: SessionSettings -> CInt -> IO ()
+setRecvSocketBufferSize :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setRecvSocketBufferSize ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->recv_socket_buffer_size = $(int val)} |]
 
-getSendSocketBufferSize :: SessionSettings -> IO CInt
+getSendSocketBufferSize :: MonadIO m =>  SessionSettings -> m CInt
 getSendSocketBufferSize ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->send_socket_buffer_size } |]
 
-setSendSocketBufferSize :: SessionSettings -> CInt -> IO ()
+setSendSocketBufferSize :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setSendSocketBufferSize ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->send_socket_buffer_size = $(int val)} |]
 
-getOptimizeHashingForSpeed :: SessionSettings -> IO Bool
+getOptimizeHashingForSpeed :: MonadIO m =>  SessionSettings -> m Bool
 getOptimizeHashingForSpeed ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->optimize_hashing_for_speed } |]
 
-setOptimizeHashingForSpeed :: SessionSettings -> Bool -> IO ()
+setOptimizeHashingForSpeed :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setOptimizeHashingForSpeed ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->optimize_hashing_for_speed = $(bool val')} |]
 
-getFileChecksDelayPerBlock :: SessionSettings -> IO CInt
+getFileChecksDelayPerBlock :: MonadIO m =>  SessionSettings -> m CInt
 getFileChecksDelayPerBlock ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->file_checks_delay_per_block } |]
 
-setFileChecksDelayPerBlock :: SessionSettings -> CInt -> IO ()
+setFileChecksDelayPerBlock :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setFileChecksDelayPerBlock ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->file_checks_delay_per_block = $(int val)} |]
 
-getDiskCacheAlgorithm :: SessionSettings -> IO DiskCacheAlgo
+getDiskCacheAlgorithm :: MonadIO m =>  SessionSettings -> m DiskCacheAlgo
 getDiskCacheAlgorithm ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   (toEnum . fromIntegral) <$> [CU.exp| int { $(session_settings * hoPtr)->disk_cache_algorithm } |]
 
-setDiskCacheAlgorithm :: SessionSettings -> DiskCacheAlgo -> IO ()
+setDiskCacheAlgorithm :: MonadIO m =>  SessionSettings -> DiskCacheAlgo -> m ()
 setDiskCacheAlgorithm ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromIntegral $ fromEnum val
   [CU.exp| void { $(session_settings * hoPtr)->disk_cache_algorithm = (session_settings::disk_cache_algo_t) $(int val')} |]
 
-getReadCacheLineSize :: SessionSettings -> IO CInt
+getReadCacheLineSize :: MonadIO m =>  SessionSettings -> m CInt
 getReadCacheLineSize ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_settings * hoPtr)->read_cache_line_size } |]
 
-setReadCacheLineSize :: SessionSettings -> CInt -> IO ()
+setReadCacheLineSize :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setReadCacheLineSize ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->read_cache_line_size = $(int val)} |]
 
-getWriteCacheLineSize :: SessionSettings -> IO CInt
+getWriteCacheLineSize :: MonadIO m =>  SessionSettings -> m CInt
 getWriteCacheLineSize ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->write_cache_line_size } |]
 
-setWriteCacheLineSize :: SessionSettings -> CInt -> IO ()
+setWriteCacheLineSize :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setWriteCacheLineSize ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->write_cache_line_size = $(int val)} |]
 
-getOptimisticDiskRetry :: SessionSettings -> IO CInt
+getOptimisticDiskRetry :: MonadIO m =>  SessionSettings -> m CInt
 getOptimisticDiskRetry ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->optimistic_disk_retry } |]
 
-setOptimisticDiskRetry :: SessionSettings -> CInt -> IO ()
+setOptimisticDiskRetry :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setOptimisticDiskRetry ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->optimistic_disk_retry = $(int val)} |]
 
-getDisableHashChecks :: SessionSettings -> IO Bool
+getDisableHashChecks :: MonadIO m =>  SessionSettings -> m Bool
 getDisableHashChecks ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->disable_hash_checks } |]
 
-setDisableHashChecks :: SessionSettings -> Bool -> IO ()
+setDisableHashChecks :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setDisableHashChecks ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->disable_hash_checks = $(bool val')} |]
 
-getAllowReorderedDiskOperations :: SessionSettings -> IO Bool
+getAllowReorderedDiskOperations :: MonadIO m =>  SessionSettings -> m Bool
 getAllowReorderedDiskOperations ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->allow_reordered_disk_operations } |]
 
-setAllowReorderedDiskOperations :: SessionSettings -> Bool -> IO ()
+setAllowReorderedDiskOperations :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setAllowReorderedDiskOperations ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->allow_reordered_disk_operations = $(bool val')} |]
 
-getAllowI2pMixed :: SessionSettings -> IO Bool
+getAllowI2pMixed :: MonadIO m =>  SessionSettings -> m Bool
 getAllowI2pMixed ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->allow_i2p_mixed } |]
 
-setAllowI2pMixed :: SessionSettings -> Bool -> IO ()
+setAllowI2pMixed :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setAllowI2pMixed ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->allow_i2p_mixed = $(bool val')} |]
 
-getMaxSuggestPieces :: SessionSettings -> IO CInt
+getMaxSuggestPieces :: MonadIO m =>  SessionSettings -> m CInt
 getMaxSuggestPieces ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->max_suggest_pieces } |]
 
-setMaxSuggestPieces :: SessionSettings -> CInt -> IO ()
+setMaxSuggestPieces :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setMaxSuggestPieces ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->max_suggest_pieces = $(int val)} |]
 
-getDropSkippedRequests :: SessionSettings -> IO Bool
+getDropSkippedRequests :: MonadIO m =>  SessionSettings -> m Bool
 getDropSkippedRequests ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->drop_skipped_requests } |]
 
-setDropSkippedRequests :: SessionSettings -> Bool -> IO ()
+setDropSkippedRequests :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setDropSkippedRequests ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->drop_skipped_requests = $(bool val')} |]
 
-getLowPrioDisk :: SessionSettings -> IO Bool
+getLowPrioDisk :: MonadIO m =>  SessionSettings -> m Bool
 getLowPrioDisk ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->low_prio_disk } |]
 
-setLowPrioDisk :: SessionSettings -> Bool -> IO ()
+setLowPrioDisk :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setLowPrioDisk ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->low_prio_disk = $(bool val')} |]
 
-getLocalServiceAnnounceInterval :: SessionSettings -> IO CInt
+getLocalServiceAnnounceInterval :: MonadIO m =>  SessionSettings -> m CInt
 getLocalServiceAnnounceInterval ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->local_service_announce_interval } |]
 
-setLocalServiceAnnounceInterval :: SessionSettings -> CInt -> IO ()
+setLocalServiceAnnounceInterval :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setLocalServiceAnnounceInterval ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->local_service_announce_interval = $(int val)} |]
 
-getDhtAnnounceInterval :: SessionSettings -> IO CInt
+getDhtAnnounceInterval :: MonadIO m =>  SessionSettings -> m CInt
 getDhtAnnounceInterval ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->dht_announce_interval } |]
 
-setDhtAnnounceInterval :: SessionSettings -> CInt -> IO ()
+setDhtAnnounceInterval :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setDhtAnnounceInterval ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->dht_announce_interval = $(int val)} |]
 
-getUdpTrackerTokenExpiry :: SessionSettings -> IO CInt
+getUdpTrackerTokenExpiry :: MonadIO m =>  SessionSettings -> m CInt
 getUdpTrackerTokenExpiry ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->udp_tracker_token_expiry } |]
 
-setUdpTrackerTokenExpiry :: SessionSettings -> CInt -> IO ()
+setUdpTrackerTokenExpiry :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setUdpTrackerTokenExpiry ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->udp_tracker_token_expiry = $(int val)} |]
 
-getVolatileReadCache :: SessionSettings -> IO Bool
+getVolatileReadCache :: MonadIO m =>  SessionSettings -> m Bool
 getVolatileReadCache ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->volatile_read_cache } |]
 
-setVolatileReadCache :: SessionSettings -> Bool -> IO ()
+setVolatileReadCache :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setVolatileReadCache ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->volatile_read_cache = $(bool val')} |]
 
-getGuidedReadCache :: SessionSettings -> IO Bool
+getGuidedReadCache :: MonadIO m =>  SessionSettings -> m Bool
 getGuidedReadCache ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->guided_read_cache } |]
 
-setGuidedReadCache :: SessionSettings -> Bool -> IO ()
+setGuidedReadCache :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setGuidedReadCache ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->guided_read_cache = $(bool val')} |]
 
-getDefaultCacheMinAge :: SessionSettings -> IO CInt
+getDefaultCacheMinAge :: MonadIO m =>  SessionSettings -> m CInt
 getDefaultCacheMinAge ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->default_cache_min_age } |]
 
-setDefaultCacheMinAge :: SessionSettings -> CInt -> IO ()
+setDefaultCacheMinAge :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setDefaultCacheMinAge ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->default_cache_min_age = $(int val)} |]
 
-getNumOptimisticUnchokeSlots :: SessionSettings -> IO CInt
+getNumOptimisticUnchokeSlots :: MonadIO m =>  SessionSettings -> m CInt
 getNumOptimisticUnchokeSlots ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->num_optimistic_unchoke_slots } |]
 
-setNumOptimisticUnchokeSlots :: SessionSettings -> CInt -> IO ()
+setNumOptimisticUnchokeSlots :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setNumOptimisticUnchokeSlots ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->num_optimistic_unchoke_slots = $(int val)} |]
 
-getNoAtimeStorage :: SessionSettings -> IO Bool
+getNoAtimeStorage :: MonadIO m =>  SessionSettings -> m Bool
 getNoAtimeStorage ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->no_atime_storage } |]
 
-setNoAtimeStorage :: SessionSettings -> Bool -> IO ()
+setNoAtimeStorage :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setNoAtimeStorage ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->no_atime_storage = $(bool val')} |]
 
-getDefaultEstReciprocationRate :: SessionSettings -> IO CInt
+getDefaultEstReciprocationRate :: MonadIO m =>  SessionSettings -> m CInt
 getDefaultEstReciprocationRate ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->default_est_reciprocation_rate } |]
 
-setDefaultEstReciprocationRate :: SessionSettings -> CInt -> IO ()
+setDefaultEstReciprocationRate :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setDefaultEstReciprocationRate ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->default_est_reciprocation_rate = $(int val)} |]
 
-getIncreaseEstReciprocationRate :: SessionSettings -> IO CInt
+getIncreaseEstReciprocationRate :: MonadIO m =>  SessionSettings -> m CInt
 getIncreaseEstReciprocationRate ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->increase_est_reciprocation_rate } |]
 
-setIncreaseEstReciprocationRate :: SessionSettings -> CInt -> IO ()
+setIncreaseEstReciprocationRate :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setIncreaseEstReciprocationRate ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->increase_est_reciprocation_rate = $(int val)} |]
 
-getDecreaseEstReciprocationRate :: SessionSettings -> IO CInt
+getDecreaseEstReciprocationRate :: MonadIO m =>  SessionSettings -> m CInt
 getDecreaseEstReciprocationRate ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->decrease_est_reciprocation_rate } |]
 
-setDecreaseEstReciprocationRate :: SessionSettings -> CInt -> IO ()
+setDecreaseEstReciprocationRate :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setDecreaseEstReciprocationRate ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->decrease_est_reciprocation_rate = $(int val)} |]
 
-getIncomingStartsQueuedTorrents :: SessionSettings -> IO Bool
+getIncomingStartsQueuedTorrents :: MonadIO m =>  SessionSettings -> m Bool
 getIncomingStartsQueuedTorrents ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->incoming_starts_queued_torrents } |]
 
-setIncomingStartsQueuedTorrents :: SessionSettings -> Bool -> IO ()
+setIncomingStartsQueuedTorrents :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setIncomingStartsQueuedTorrents ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->incoming_starts_queued_torrents = $(bool val')} |]
 
-getReportTrueDownloaded :: SessionSettings -> IO Bool
+getReportTrueDownloaded :: MonadIO m =>  SessionSettings -> m Bool
 getReportTrueDownloaded ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->report_true_downloaded } |]
 
-setReportTrueDownloaded :: SessionSettings -> Bool -> IO ()
+setReportTrueDownloaded :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setReportTrueDownloaded ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->report_true_downloaded = $(bool val')} |]
 
-getStrictEndGameMode :: SessionSettings -> IO Bool
+getStrictEndGameMode :: MonadIO m =>  SessionSettings -> m Bool
 getStrictEndGameMode ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->strict_end_game_mode } |]
 
-setStrictEndGameMode :: SessionSettings -> Bool -> IO ()
+setStrictEndGameMode :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setStrictEndGameMode ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->strict_end_game_mode = $(bool val')} |]
 
-getBroadcastLsd :: SessionSettings -> IO Bool
+getBroadcastLsd :: MonadIO m =>  SessionSettings -> m Bool
 getBroadcastLsd ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->broadcast_lsd } |]
 
-setBroadcastLsd :: SessionSettings -> Bool -> IO ()
+setBroadcastLsd :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setBroadcastLsd ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->broadcast_lsd = $(bool val')} |]
 
-getEnableOutgoingUtp :: SessionSettings -> IO Bool
+getEnableOutgoingUtp :: MonadIO m =>  SessionSettings -> m Bool
 getEnableOutgoingUtp ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->enable_outgoing_utp } |]
 
-setEnableOutgoingUtp :: SessionSettings -> Bool -> IO ()
+setEnableOutgoingUtp :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setEnableOutgoingUtp ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->enable_outgoing_utp = $(bool val')} |]
 
-getEnableIncomingUtp :: SessionSettings -> IO Bool
+getEnableIncomingUtp :: MonadIO m =>  SessionSettings -> m Bool
 getEnableIncomingUtp ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->enable_incoming_utp } |]
 
-setEnableIncomingUtp :: SessionSettings -> Bool -> IO ()
+setEnableIncomingUtp :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setEnableIncomingUtp ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->enable_incoming_utp = $(bool val')} |]
 
-getEnableOutgoingTcp :: SessionSettings -> IO Bool
+getEnableOutgoingTcp :: MonadIO m =>  SessionSettings -> m Bool
 getEnableOutgoingTcp ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->enable_outgoing_tcp } |]
 
-setEnableOutgoingTcp :: SessionSettings -> Bool -> IO ()
+setEnableOutgoingTcp :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setEnableOutgoingTcp ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->enable_outgoing_tcp = $(bool val')} |]
 
-getEnableIncomingTcp :: SessionSettings -> IO Bool
+getEnableIncomingTcp :: MonadIO m =>  SessionSettings -> m Bool
 getEnableIncomingTcp ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->enable_incoming_tcp } |]
 
-setEnableIncomingTcp :: SessionSettings -> Bool -> IO ()
+setEnableIncomingTcp :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setEnableIncomingTcp ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->enable_incoming_tcp = $(bool val')} |]
 
-getMaxPexPeers :: SessionSettings -> IO CInt
+getMaxPexPeers :: MonadIO m =>  SessionSettings -> m CInt
 getMaxPexPeers ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->max_pex_peers } |]
 
-setMaxPexPeers :: SessionSettings -> CInt -> IO ()
+setMaxPexPeers :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setMaxPexPeers ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->max_pex_peers = $(int val)} |]
 
 
-getIgnoreResumeTimestamps :: SessionSettings -> IO Bool
+getIgnoreResumeTimestamps :: MonadIO m =>  SessionSettings -> m Bool
 getIgnoreResumeTimestamps ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->ignore_resume_timestamps } |]
 
-setIgnoreResumeTimestamps :: SessionSettings -> Bool -> IO ()
+setIgnoreResumeTimestamps :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setIgnoreResumeTimestamps ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->ignore_resume_timestamps = $(bool val')} |]
 
-getNoRecheckIncompleteResume :: SessionSettings -> IO Bool
+getNoRecheckIncompleteResume :: MonadIO m =>  SessionSettings -> m Bool
 getNoRecheckIncompleteResume ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->no_recheck_incomplete_resume } |]
 
-setNoRecheckIncompleteResume :: SessionSettings -> Bool -> IO ()
+setNoRecheckIncompleteResume :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setNoRecheckIncompleteResume ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->no_recheck_incomplete_resume = $(bool val')} |]
 
-getAnonymousMode :: SessionSettings -> IO Bool
+getAnonymousMode :: MonadIO m =>  SessionSettings -> m Bool
 getAnonymousMode ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->anonymous_mode } |]
 
-setAnonymousMode :: SessionSettings -> Bool -> IO ()
+setAnonymousMode :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setAnonymousMode ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->anonymous_mode = $(bool val')} |]
 
-getForceProxy :: SessionSettings -> IO Bool
+getForceProxy :: MonadIO m =>  SessionSettings -> m Bool
 getForceProxy ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->force_proxy } |]
 
-setForceProxy :: SessionSettings -> Bool -> IO ()
+setForceProxy :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setForceProxy ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->force_proxy = $(bool val')} |]
 
-getTickInterval :: SessionSettings -> IO CInt
+getTickInterval :: MonadIO m =>  SessionSettings -> m CInt
 getTickInterval ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->tick_interval } |]
 
-setTickInterval :: SessionSettings -> CInt -> IO ()
+setTickInterval :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setTickInterval ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->tick_interval = $(int val)} |]
 
-getReportWebSeedDownloads :: SessionSettings -> IO Bool
+getReportWebSeedDownloads :: MonadIO m =>  SessionSettings -> m Bool
 getReportWebSeedDownloads ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->report_web_seed_downloads } |]
 
-setReportWebSeedDownloads :: SessionSettings -> Bool -> IO ()
+setReportWebSeedDownloads :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setReportWebSeedDownloads ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->report_web_seed_downloads = $(bool val')} |]
 
-getShareModeTarget :: SessionSettings -> IO CInt
+getShareModeTarget :: MonadIO m =>  SessionSettings -> m CInt
 getShareModeTarget ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->share_mode_target } |]
 
-setShareModeTarget :: SessionSettings -> CInt -> IO ()
+setShareModeTarget :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setShareModeTarget ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->share_mode_target = $(int val)} |]
 
-getUploadRateLimit :: SessionSettings -> IO CInt
+getUploadRateLimit :: MonadIO m =>  SessionSettings -> m CInt
 getUploadRateLimit ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->upload_rate_limit } |]
 
-setUploadRateLimit :: SessionSettings -> CInt -> IO ()
+setUploadRateLimit :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setUploadRateLimit ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->upload_rate_limit = $(int val)} |]
 
-getDownloadRateLimit :: SessionSettings -> IO CInt
+getDownloadRateLimit :: MonadIO m =>  SessionSettings -> m CInt
 getDownloadRateLimit ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->download_rate_limit } |]
 
-setDownloadRateLimit :: SessionSettings -> CInt -> IO ()
+setDownloadRateLimit :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setDownloadRateLimit ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->download_rate_limit = $(int val)} |]
 
-getLocalUploadRateLimit :: SessionSettings -> IO CInt
+getLocalUploadRateLimit :: MonadIO m =>  SessionSettings -> m CInt
 getLocalUploadRateLimit ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->local_upload_rate_limit } |]
 
-setLocalUploadRateLimit :: SessionSettings -> CInt -> IO ()
+setLocalUploadRateLimit :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setLocalUploadRateLimit ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->local_upload_rate_limit = $(int val)} |]
 
-getLocalDownloadRateLimit :: SessionSettings -> IO CInt
+getLocalDownloadRateLimit :: MonadIO m =>  SessionSettings -> m CInt
 getLocalDownloadRateLimit ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->local_download_rate_limit } |]
 
-setLocalDownloadRateLimit :: SessionSettings -> CInt -> IO ()
+setLocalDownloadRateLimit :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setLocalDownloadRateLimit ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->local_download_rate_limit = $(int val)} |]
 
-getDhtUploadRateLimit :: SessionSettings -> IO CInt
+getDhtUploadRateLimit :: MonadIO m =>  SessionSettings -> m CInt
 getDhtUploadRateLimit ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->dht_upload_rate_limit } |]
 
-setDhtUploadRateLimit :: SessionSettings -> CInt -> IO ()
+setDhtUploadRateLimit :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setDhtUploadRateLimit ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->dht_upload_rate_limit = $(int val)} |]
 
-getUnchokeSlotsLimit :: SessionSettings -> IO CInt
+getUnchokeSlotsLimit :: MonadIO m =>  SessionSettings -> m CInt
 getUnchokeSlotsLimit ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->unchoke_slots_limit } |]
 
-setUnchokeSlotsLimit :: SessionSettings -> CInt -> IO ()
+setUnchokeSlotsLimit :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setUnchokeSlotsLimit ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->unchoke_slots_limit = $(int val)} |]
 
-getHalfOpenLimit :: SessionSettings -> IO CInt
+getHalfOpenLimit :: MonadIO m =>  SessionSettings -> m CInt
 getHalfOpenLimit ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->half_open_limit } |]
 
-setHalfOpenLimit :: SessionSettings -> CInt -> IO ()
+setHalfOpenLimit :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setHalfOpenLimit ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->half_open_limit = $(int val)} |]
 
-getSessionConnectionsLimit :: SessionSettings -> IO CInt
+getSessionConnectionsLimit :: MonadIO m =>  SessionSettings -> m CInt
 getSessionConnectionsLimit ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->connections_limit } |]
 
-setSessionConnectionsLimit :: SessionSettings -> CInt -> IO ()
+setSessionConnectionsLimit :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setSessionConnectionsLimit ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->connections_limit = $(int val)} |]
 
-getConnectionsSlack :: SessionSettings -> IO CInt
+getConnectionsSlack :: MonadIO m =>  SessionSettings -> m CInt
 getConnectionsSlack ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->connections_slack } |]
 
-setConnectionsSlack :: SessionSettings -> CInt -> IO ()
+setConnectionsSlack :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setConnectionsSlack ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->connections_slack = $(int val)} |]
 
-getUtpTargetDelay :: SessionSettings -> IO CInt
+getUtpTargetDelay :: MonadIO m =>  SessionSettings -> m CInt
 getUtpTargetDelay ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->utp_target_delay } |]
 
-setUtpTargetDelay :: SessionSettings -> CInt -> IO ()
+setUtpTargetDelay :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setUtpTargetDelay ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->utp_target_delay = $(int val)} |]
 
-getUtpGainFactor :: SessionSettings -> IO CInt
+getUtpGainFactor :: MonadIO m =>  SessionSettings -> m CInt
 getUtpGainFactor ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->utp_gain_factor } |]
 
-setUtpGainFactor :: SessionSettings -> CInt -> IO ()
+setUtpGainFactor :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setUtpGainFactor ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->utp_gain_factor = $(int val)} |]
 
-getUtpMinTimeout :: SessionSettings -> IO CInt
+getUtpMinTimeout :: MonadIO m =>  SessionSettings -> m CInt
 getUtpMinTimeout ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->utp_min_timeout } |]
 
-setUtpMinTimeout :: SessionSettings -> CInt -> IO ()
+setUtpMinTimeout :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setUtpMinTimeout ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->utp_min_timeout = $(int val)} |]
 
-getUtpSynResends :: SessionSettings -> IO CInt
+getUtpSynResends :: MonadIO m =>  SessionSettings -> m CInt
 getUtpSynResends ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->utp_syn_resends } |]
 
-setUtpSynResends :: SessionSettings -> CInt -> IO ()
+setUtpSynResends :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setUtpSynResends ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->utp_syn_resends = $(int val)} |]
 
-getUtpFinResends :: SessionSettings -> IO CInt
+getUtpFinResends :: MonadIO m =>  SessionSettings -> m CInt
 getUtpFinResends ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->utp_fin_resends } |]
 
-setUtpFinResends :: SessionSettings -> CInt -> IO ()
+setUtpFinResends :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setUtpFinResends ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->utp_fin_resends = $(int val)} |]
 
-getUtpNumResends :: SessionSettings -> IO CInt
+getUtpNumResends :: MonadIO m =>  SessionSettings -> m CInt
 getUtpNumResends ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->utp_num_resends } |]
 
-setUtpNumResends :: SessionSettings -> CInt -> IO ()
+setUtpNumResends :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setUtpNumResends ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->utp_num_resends = $(int val)} |]
 
-getUtpConnectTimeout :: SessionSettings -> IO CInt
+getUtpConnectTimeout :: MonadIO m =>  SessionSettings -> m CInt
 getUtpConnectTimeout ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->utp_connect_timeout } |]
 
-setUtpConnectTimeout :: SessionSettings -> CInt -> IO ()
+setUtpConnectTimeout :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setUtpConnectTimeout ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->utp_connect_timeout = $(int val)} |]
 
-getUtpDynamicSockBuf :: SessionSettings -> IO Bool
+getUtpDynamicSockBuf :: MonadIO m =>  SessionSettings -> m Bool
 getUtpDynamicSockBuf ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->utp_dynamic_sock_buf } |]
 
-setUtpDynamicSockBuf :: SessionSettings -> Bool -> IO ()
+setUtpDynamicSockBuf :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setUtpDynamicSockBuf ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->utp_dynamic_sock_buf = $(bool val')} |]
 
-getUtpLossMultiplier :: SessionSettings -> IO CInt
+getUtpLossMultiplier :: MonadIO m =>  SessionSettings -> m CInt
 getUtpLossMultiplier ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->utp_loss_multiplier } |]
 
-setUtpLossMultiplier :: SessionSettings -> CInt -> IO ()
+setUtpLossMultiplier :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setUtpLossMultiplier ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->utp_loss_multiplier = $(int val)} |]
 
-getMixedModeAlgorithm :: SessionSettings -> IO BandwidthMixedAlgo
+getMixedModeAlgorithm :: MonadIO m =>  SessionSettings -> m BandwidthMixedAlgo
 getMixedModeAlgorithm ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   (toEnum . fromIntegral) <$> [CU.exp| int { $(session_settings * hoPtr)->mixed_mode_algorithm } |]
 
-setMixedModeAlgorithm :: SessionSettings -> BandwidthMixedAlgo -> IO ()
+setMixedModeAlgorithm :: MonadIO m =>  SessionSettings -> BandwidthMixedAlgo -> m ()
 setMixedModeAlgorithm ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromIntegral $ fromEnum val
   [CU.exp| void { $(session_settings * hoPtr)->mixed_mode_algorithm = $(int val')} |]
 
-getRateLimitUtp :: SessionSettings -> IO Bool
+getRateLimitUtp :: MonadIO m =>  SessionSettings -> m Bool
 getRateLimitUtp ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->rate_limit_utp } |]
 
-setRateLimitUtp :: SessionSettings -> Bool -> IO ()
+setRateLimitUtp :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setRateLimitUtp ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->rate_limit_utp = $(bool val')} |]
 
-getListenQueueSize :: SessionSettings -> IO CInt
+getListenQueueSize :: MonadIO m =>  SessionSettings -> m CInt
 getListenQueueSize ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->listen_queue_size } |]
 
-setListenQueueSize :: SessionSettings -> CInt -> IO ()
+setListenQueueSize :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setListenQueueSize ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->listen_queue_size = $(int val)} |]
 
-getAnnounceDoubleNat :: SessionSettings -> IO Bool
+getAnnounceDoubleNat :: MonadIO m =>  SessionSettings -> m Bool
 getAnnounceDoubleNat ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->announce_double_nat } |]
 
-setAnnounceDoubleNat :: SessionSettings -> Bool -> IO ()
+setAnnounceDoubleNat :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setAnnounceDoubleNat ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->announce_double_nat = $(bool val')} |]
 
-getTorrentConnectBoost :: SessionSettings -> IO CInt
+getTorrentConnectBoost :: MonadIO m =>  SessionSettings -> m CInt
 getTorrentConnectBoost ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->torrent_connect_boost } |]
 
-setTorrentConnectBoost :: SessionSettings -> CInt -> IO ()
+setTorrentConnectBoost :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setTorrentConnectBoost ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->torrent_connect_boost = $(int val)} |]
 
-getSeedingOutgoingConnections :: SessionSettings -> IO Bool
+getSeedingOutgoingConnections :: MonadIO m =>  SessionSettings -> m Bool
 getSeedingOutgoingConnections ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->seeding_outgoing_connections } |]
 
-setSeedingOutgoingConnections :: SessionSettings -> Bool -> IO ()
+setSeedingOutgoingConnections :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setSeedingOutgoingConnections ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->seeding_outgoing_connections = $(bool val')} |]
 
-getNoConnectPrivilegedPorts :: SessionSettings -> IO Bool
+getNoConnectPrivilegedPorts :: MonadIO m =>  SessionSettings -> m Bool
 getNoConnectPrivilegedPorts ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->no_connect_privileged_ports } |]
 
-setNoConnectPrivilegedPorts :: SessionSettings -> Bool -> IO ()
+setNoConnectPrivilegedPorts :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setNoConnectPrivilegedPorts ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->no_connect_privileged_ports = $(bool val')} |]
 
-getAlertQueueSize :: SessionSettings -> IO CInt
+getAlertQueueSize :: MonadIO m =>  SessionSettings -> m CInt
 getAlertQueueSize ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->alert_queue_size } |]
 
-setAlertQueueSize :: SessionSettings -> CInt -> IO ()
+setAlertQueueSize :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setAlertQueueSize ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->alert_queue_size = $(int val)} |]
 
-getMaxMetadataSize :: SessionSettings -> IO CInt
+getMaxMetadataSize :: MonadIO m =>  SessionSettings -> m CInt
 getMaxMetadataSize ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->max_metadata_size } |]
 
-setMaxMetadataSize :: SessionSettings -> CInt -> IO ()
+setMaxMetadataSize :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setMaxMetadataSize ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->max_metadata_size = $(int val)} |]
 
-getSmoothConnects :: SessionSettings -> IO Bool
+getSmoothConnects :: MonadIO m =>  SessionSettings -> m Bool
 getSmoothConnects ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->smooth_connects } |]
 
-setSmoothConnects :: SessionSettings -> Bool -> IO ()
+setSmoothConnects :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setSmoothConnects ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->smooth_connects = $(bool val')} |]
 
-getAlwaysSendUserAgent :: SessionSettings -> IO Bool
+getAlwaysSendUserAgent :: MonadIO m =>  SessionSettings -> m Bool
 getAlwaysSendUserAgent ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->always_send_user_agent } |]
 
-setAlwaysSendUserAgent :: SessionSettings -> Bool -> IO ()
+setAlwaysSendUserAgent :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setAlwaysSendUserAgent ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->always_send_user_agent = $(bool val')} |]
 
-getApplyIpFilterToTrackers :: SessionSettings -> IO Bool
+getApplyIpFilterToTrackers :: MonadIO m =>  SessionSettings -> m Bool
 getApplyIpFilterToTrackers ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->apply_ip_filter_to_trackers } |]
 
-setApplyIpFilterToTrackers :: SessionSettings -> Bool -> IO ()
+setApplyIpFilterToTrackers :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setApplyIpFilterToTrackers ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->apply_ip_filter_to_trackers = $(bool val')} |]
 
-getReadJobEvery :: SessionSettings -> IO CInt
+getReadJobEvery :: MonadIO m =>  SessionSettings -> m CInt
 getReadJobEvery ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->read_job_every } |]
 
-setReadJobEvery :: SessionSettings -> CInt -> IO ()
+setReadJobEvery :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setReadJobEvery ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->read_job_every = $(int val)} |]
 
-getUseDiskReadAhead :: SessionSettings -> IO Bool
+getUseDiskReadAhead :: MonadIO m =>  SessionSettings -> m Bool
 getUseDiskReadAhead ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->use_disk_read_ahead } |]
 
-setUseDiskReadAhead :: SessionSettings -> Bool -> IO ()
+setUseDiskReadAhead :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setUseDiskReadAhead ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->use_disk_read_ahead = $(bool val')} |]
 
-getLockFiles :: SessionSettings -> IO Bool
+getLockFiles :: MonadIO m =>  SessionSettings -> m Bool
 getLockFiles ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->lock_files } |]
 
-setLockFiles :: SessionSettings -> Bool -> IO ()
+setLockFiles :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setLockFiles ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->lock_files = $(bool val')} |]
 
-getSslListen :: SessionSettings -> IO CInt
+getSslListen :: MonadIO m =>  SessionSettings -> m CInt
 getSslListen ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->ssl_listen } |]
 
-setSslListen :: SessionSettings -> CInt -> IO ()
+setSslListen :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setSslListen ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->ssl_listen = $(int val)} |]
 
-getTrackerBackoff :: SessionSettings -> IO CInt
+getTrackerBackoff :: MonadIO m =>  SessionSettings -> m CInt
 getTrackerBackoff ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->tracker_backoff } |]
 
-setTrackerBackoff :: SessionSettings -> CInt -> IO ()
+setTrackerBackoff :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setTrackerBackoff ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->tracker_backoff = $(int val)} |]
 
-getBanWebSeeds :: SessionSettings -> IO Bool
+getBanWebSeeds :: MonadIO m =>  SessionSettings -> m Bool
 getBanWebSeeds ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->ban_web_seeds } |]
 
-setBanWebSeeds :: SessionSettings -> Bool -> IO ()
+setBanWebSeeds :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setBanWebSeeds ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->ban_web_seeds = $(bool val')} |]
 
-getMaxHttpRecvBufferSize :: SessionSettings -> IO CInt
+getMaxHttpRecvBufferSize :: MonadIO m =>  SessionSettings -> m CInt
 getMaxHttpRecvBufferSize ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->max_http_recv_buffer_size } |]
 
-setMaxHttpRecvBufferSize :: SessionSettings -> CInt -> IO ()
+setMaxHttpRecvBufferSize :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setMaxHttpRecvBufferSize ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->max_http_recv_buffer_size = $(int val)} |]
 
-getSupportShareMode :: SessionSettings -> IO Bool
+getSupportShareMode :: MonadIO m =>  SessionSettings -> m Bool
 getSupportShareMode ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->support_share_mode } |]
 
-setSupportShareMode :: SessionSettings -> Bool -> IO ()
+setSupportShareMode :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setSupportShareMode ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->support_share_mode = $(bool val')} |]
 
-getSupportMerkleTorrents :: SessionSettings -> IO Bool
+getSupportMerkleTorrents :: MonadIO m =>  SessionSettings -> m Bool
 getSupportMerkleTorrents ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->support_merkle_torrents } |]
 
-setSupportMerkleTorrents :: SessionSettings -> Bool -> IO ()
+setSupportMerkleTorrents :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setSupportMerkleTorrents ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->support_merkle_torrents = $(bool val')} |]
 
-getReportRedundantBytes :: SessionSettings -> IO Bool
+getReportRedundantBytes :: MonadIO m =>  SessionSettings -> m Bool
 getReportRedundantBytes ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->report_redundant_bytes } |]
 
-setReportRedundantBytes :: SessionSettings -> Bool -> IO ()
+setReportRedundantBytes :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setReportRedundantBytes ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->report_redundant_bytes = $(bool val')} |]
 
-getHandshakeClientVersion :: SessionSettings -> IO Text
+getHandshakeClientVersion :: MonadIO m =>  SessionSettings -> m Text
 getHandshakeClientVersion ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   res <- fromPtr [CU.exp| string * { new std::string($(session_settings * hoPtr)->handshake_client_version) } |]
   stdStringToText res
 
-setHandshakeClientVersion :: SessionSettings -> Text -> IO ()
+setHandshakeClientVersion :: MonadIO m =>  SessionSettings -> Text -> m ()
 setHandshakeClientVersion ho val =
-  TF.withCStringLen val $ \(cstr, len) -> do
+  liftIO . TF.withCStringLen val $ \(cstr, len) -> do
     let clen = fromIntegral len
-    withPtr ho $ \hoPtr ->
+    liftIO . withPtr ho $ \hoPtr ->
       [CU.exp| void { $(session_settings * hoPtr)->handshake_client_version = std::string($(const char * cstr), $(size_t clen))} |]
 
-getUseDiskCachePool :: SessionSettings -> IO Bool
+getUseDiskCachePool :: MonadIO m =>  SessionSettings -> m Bool
 getUseDiskCachePool ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  toBool <$> [CU.exp| bool { $(session_settings * hoPtr)->use_disk_cache_pool } |]
 
-setUseDiskCachePool :: SessionSettings -> Bool -> IO ()
+setUseDiskCachePool :: MonadIO m =>  SessionSettings -> Bool -> m ()
 setUseDiskCachePool ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(session_settings * hoPtr)->use_disk_cache_pool = $(bool val')} |]
 
-getInactiveDownRate :: SessionSettings -> IO CInt
+getInactiveDownRate :: MonadIO m =>  SessionSettings -> m CInt
 getInactiveDownRate ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->inactive_down_rate } |]
 
-setInactiveDownRate :: SessionSettings -> CInt -> IO ()
+setInactiveDownRate :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setInactiveDownRate ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->inactive_down_rate = $(int val)} |]
 
-getInactiveUpRate :: SessionSettings -> IO CInt
+getInactiveUpRate :: MonadIO m =>  SessionSettings -> m CInt
 getInactiveUpRate ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(session_settings * hoPtr)->inactive_up_rate } |]
 
-setInactiveUpRate :: SessionSettings -> CInt -> IO ()
+setInactiveUpRate :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setInactiveUpRate ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->inactive_up_rate = $(int val)} |]

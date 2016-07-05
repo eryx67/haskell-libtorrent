@@ -12,6 +12,7 @@ module Libtorrent.PeerRequest (PeerRequest
                               , getLength
                               ) where
 
+import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Foreign.C.Types (CInt)
 import           Foreign.ForeignPtr ( ForeignPtr, withForeignPtr )
 import qualified Language.C.Inline as C
@@ -48,17 +49,17 @@ instance FromPtr PeerRequest where
 instance WithPtr PeerRequest where
   withPtr (PeerRequest fptr) = withForeignPtr fptr
 
-getPiece :: PeerRequest -> IO CInt
+getPiece :: MonadIO m =>  PeerRequest -> m CInt
 getPiece ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(peer_request * hoPtr)->piece } |]
 
-getStart :: PeerRequest -> IO CInt
+getStart :: MonadIO m =>  PeerRequest -> m CInt
 getStart ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(peer_request * hoPtr)->start } |]
 
-getLength :: PeerRequest -> IO CInt
+getLength :: MonadIO m =>  PeerRequest -> m CInt
 getLength ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(peer_request * hoPtr)->length } |]

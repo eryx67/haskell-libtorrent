@@ -14,6 +14,7 @@ module Libtorrent.Session (Session
                           , newSession
                           , addTorrent
                           , asyncAddTorrent
+                          , sessionHandleAlerts
                           , popAlerts
                           , unSession
                           , postTorrentUpdates
@@ -65,14 +66,19 @@ module Libtorrent.Session (Session
                           , dhtPutItem
                           , addExtension
                           , addTorrentExtension
-                          -- , setAlertDispatch
+                          , proxy
+                          , setProxy
+                          , i2pProxy
+                          , setI2pProxy
                           ) where
 
 
-import           Control.Exception (bracket)
+import           Control.Monad (forM)
+import           Control.Monad.Catch (bracket)
+import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
-import           Data.Maybe (fromMaybe)
+import           Data.Maybe (fromMaybe, catMaybes)
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           Foreign.C.String (withCString)
@@ -83,10 +89,9 @@ import qualified Language.C.Inline as C
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Unsafe as CU
 
-
-import           Libtorrent.Alert (newAlertDeque, Alert, AlertCategory)
+import           Libtorrent.Alert (Alert, AlertCategory, AlertHandler,
+                                   newAlertDeque, handleAlerts)
 import           Libtorrent.Bencode
-import           Libtorrent.ErrorCode
 import           Libtorrent.Exceptions
 import           Libtorrent.Inline
 import           Libtorrent.Internal
@@ -94,6 +99,7 @@ import           Libtorrent.Rss
 import           Libtorrent.Session.AddTorrentParams
 import           Libtorrent.Session.DhtSettings (DhtSettings)
 import           Libtorrent.Session.PeSettings (PeSettings)
+import           Libtorrent.Session.ProxySettings (ProxySettings)
 import           Libtorrent.Session.SessionSettings (SessionSettings)
 import           Libtorrent.Session.SessionStatus (SessionStatus)
 import           Libtorrent.Sha1Hash (Sha1Hash)
@@ -101,7 +107,7 @@ import           Libtorrent.String
 import           Libtorrent.TorrentHandle
 import           Libtorrent.TorrentHandle.TorrentStatus
 import           Libtorrent.Types
-
+import           Libtorrent.Types.ArrayLike (toList)
 
 C.context libtorrentCtx
 
@@ -135,25 +141,25 @@ data SaveStateFlags =
   | SaveI2pProxy
   | SaveEncryptionSettings
   | SaveFeeds
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 data ListenOnFlags =
   ListenNoSystemPort
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 data RemoveTorrentOptions =
   DeleteFiles
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 data SessionFlags =
   AddDefaultPlugins
   | StartDefaultFeatures
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 data ProtocolType =
   Udp
   | Tcp
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 newtype Session = Session { unSession :: ForeignPtr (CType Session)}
 
@@ -176,15 +182,15 @@ instance WithPtr Session where
   withPtr (Session fptr) = withForeignPtr fptr
 
 -- | Create new session.
-newSession :: IO Session
+newSession :: MonadIO m => m Session
 newSession =
-  fromPtr [C.exp| session * { new session() } |]
+  liftIO $ fromPtr [C.exp| session * { new session() } |]
 
 -- | Add torrent to session. It throws 'LibtorrentException'.
 -- all 'TorrentHandle's must be destructed before the 'Session' is destructed
-addTorrent :: Session -> AddTorrentParams -> IO TorrentHandle
+addTorrent :: MonadIO m => Session -> AddTorrentParams -> m TorrentHandle
 addTorrent ses atp =
-  withErrorCode AddTorrentError $ \ecPtr ->
+  liftIO . withErrorCode AddTorrentError $ \ecPtr ->
   withPtr ses $ \sesPtr ->
   withPtr atp $ \atPtr -> do
     fromPtr [CU.block| torrent_handle * {
@@ -195,16 +201,16 @@ addTorrent ses atp =
             |]
 
 -- | Notification of the torrent being added is sent as 'add_torrent_alert'.
-asyncAddTorrent :: Session -> AddTorrentParams -> IO ()
+asyncAddTorrent :: MonadIO m => Session -> AddTorrentParams -> m ()
 asyncAddTorrent ses atp =
-  withPtr ses $ \sesPtr ->
+  liftIO . withPtr ses $ \sesPtr ->
   withPtr atp $ \atPtr -> do
     [CU.exp| void { $(session * sesPtr)->add_torrent(*$(add_torrent_params * atPtr)) } |]
 
 -- | Load state from bencoded bytestring. Can throw 'LibtorrentException'.
-loadState :: Session -> ByteString -> IO ()
+loadState :: MonadIO m => Session -> ByteString -> m ()
 loadState ho state =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   withErrorCode BDecodeError $ \ecPtr ->
   [C.block| void {
       lazy_entry e;
@@ -215,9 +221,9 @@ loadState ho state =
   |]
 
 -- | Save state to bencoded bytestring.
-saveState :: Session -> BitFlags SaveStateFlags -> IO Bencoded
+saveState :: MonadIO m => Session -> BitFlags SaveStateFlags -> m Bencoded
 saveState ho flags =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   bracket
   [CU.exp| entry * { new entry() }|]
   (\ePtr -> [CU.exp| void { delete $(entry * ePtr)} |]) $
@@ -226,19 +232,26 @@ saveState ho flags =
     [C.exp| void { $(session * hoPtr)->save_state(*$(entry *ePtr), $(uint32_t flags')) } |]
     entryToBencoded ePtr
 
-refreshTorrentStatus :: Session -> StdVector TorrentStatus -> Maybe (BitFlags StatusFlags)
-                        -> IO (StdVector TorrentStatus)
+-- | Helper fo handling session alerts with 'popAlert'.
+-- Returns results of affected 'AlertHandler's.
+sessionHandleAlerts :: MonadIO m => Session -> [AlertHandler a m] -> m [a]
+sessionHandleAlerts ses alertHlrs = do
+  alerts <-  popAlerts ses >>= liftIO . toList
+  fmap catMaybes $ forM alerts (flip handleAlerts alertHlrs)
+
+refreshTorrentStatus :: MonadIO m => Session -> StdVector TorrentStatus -> Maybe (BitFlags StatusFlags)
+                        -> m (StdVector TorrentStatus)
 refreshTorrentStatus ho vts flags =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
     let flags' = maybe 0 (fromIntegral . fromEnum) flags
     withPtr vts $ \vtsPtr ->
       [CU.exp| void { $(session * hoPtr)->refresh_torrent_status($(VectorTorrentStatus * vtsPtr), $(uint32_t flags')) } |]
     return vts
 
-getTorrentStatus :: Session -> (TorrentStatus -> Bool) -> Maybe (BitFlags StatusFlags)
-                    -> IO (StdVector TorrentStatus)
+getTorrentStatus :: MonadIO m => Session -> (TorrentStatus -> Bool) -> Maybe (BitFlags StatusFlags)
+                    -> m (StdVector TorrentStatus)
 getTorrentStatus ho tsFilter flags =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let tsFilter' = \ts -> objFromPtr_ TorrentStatus (pure ts) >>= (return . tsFilter)
   let flags' = maybe 0 (fromIntegral . fromEnum) flags
   bracket
@@ -254,40 +267,40 @@ getTorrentStatus ho tsFilter flags =
                }
              |]
 
-postTorrentUpdates :: Session -> IO ()
+postTorrentUpdates :: MonadIO m => Session -> m ()
 postTorrentUpdates ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session * hoPtr)->post_torrent_updates() } |]
 
-findTorrent :: Session -> Sha1Hash -> IO TorrentHandle
+findTorrent :: MonadIO m => Session -> Sha1Hash -> m TorrentHandle
 findTorrent ho info_hash =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   withPtr info_hash $ \ihPtr ->
   fromPtr [CU.exp| torrent_handle * { new torrent_handle($(session * hoPtr)->find_torrent(*$(sha1_hash * ihPtr))) } |]
 
-getTorrents :: Session -> IO (StdVector TorrentHandle)
+getTorrents :: MonadIO m => Session -> m (StdVector TorrentHandle)
 getTorrents ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   fromPtr [CU.exp| VectorTorrentHandle * { new std::vector<torrent_handle>($(session * hoPtr)->get_torrents()) } |]
 
-sessionResume :: Session -> IO ()
+sessionResume :: MonadIO m => Session -> m ()
 sessionResume ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session * hoPtr)->resume() } |]
 
-sessionPause :: Session -> IO ()
+sessionPause :: MonadIO m => Session -> m ()
 sessionPause ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session * hoPtr)->pause() } |]
 
-isPaused :: Session -> IO Bool
+isPaused :: MonadIO m => Session -> m Bool
 isPaused ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toBool <$> [CU.exp| bool { $(session * hoPtr)->is_paused() } |]
 
-sessionStatus :: Session -> IO SessionStatus
+sessionStatus :: MonadIO m => Session -> m SessionStatus
 sessionStatus ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   fromPtr [CU.exp| session_status * { new session_status($(session * hoPtr)->status()) } |]
 
 -- TODO:
@@ -295,21 +308,21 @@ sessionStatus ho =
 -- void get_cache_info (sha1_hash const& ih
 --    , std::vector<cached_piece_info>& ret) const;
 
-addFeed :: Session -> FeedSettings -> IO FeedHandle
+addFeed :: MonadIO m => Session -> FeedSettings -> m FeedHandle
 addFeed ho fs =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   withPtr fs $ \fsPtr ->
   fromPtr [CU.exp| feed_handle * { new feed_handle($(session * hoPtr)->add_feed(*$(feed_settings * fsPtr))) } |]
 
-removeFeed :: Session -> FeedHandle -> IO ()
+removeFeed :: MonadIO m => Session -> FeedHandle -> m ()
 removeFeed ho fh =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   withPtr fh $ \fhPtr ->
   [CU.exp| void { $(session * hoPtr)->remove_feed(*$(feed_handle * fhPtr)) } |]
 
-getFeeds :: Session -> IO (StdVector FeedHandle)
+getFeeds :: MonadIO m => Session -> m (StdVector FeedHandle)
 getFeeds ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   fromPtr [CU.block| VectorFeedHandle * {
               VectorFeedHandle *res = new std::vector<feed_handle>();
               $(session * hoPtr)->get_feeds(*res);
@@ -318,35 +331,35 @@ getFeeds ho =
           |]
 
 
-isDhtRunning :: Session -> IO Bool
+isDhtRunning :: MonadIO m => Session -> m Bool
 isDhtRunning ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toBool <$> [CU.exp| bool { $(session * hoPtr)->is_dht_running() } |]
 
-getDhtSettings :: Session -> IO DhtSettings
+getDhtSettings :: MonadIO m => Session -> m DhtSettings
 getDhtSettings ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   fromPtr [CU.exp| dht_settings * { new dht_settings($(session * hoPtr)->get_dht_settings()) } |]
 
-setDhtSettings :: Session -> DhtSettings -> IO ()
+setDhtSettings :: MonadIO m => Session -> DhtSettings -> m ()
 setDhtSettings ho ds =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   withPtr ds $ \dsPtr ->
   [CU.exp| void { $(session * hoPtr)->set_dht_settings(*$(dht_settings * dsPtr)) } |]
 
-startDht :: Session -> IO ()
+startDht :: MonadIO m => Session -> m ()
 startDht ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session * hoPtr)->start_dht() } |]
 
-stopDht :: Session -> IO ()
+stopDht :: MonadIO m => Session -> m ()
 stopDht ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session * hoPtr)->stop_dht() } |]
 
-addDhtRouter :: Session -> Text -> C.CInt -> IO ()
+addDhtRouter :: MonadIO m => Session -> Text -> C.CInt -> m ()
 addDhtRouter ho host port =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
     hstr <- textToStdString host
     withPtr hstr $ \hstrPtr ->
       [CU.block| void {
@@ -355,9 +368,9 @@ addDhtRouter ho host port =
          }
       |]
 
-addDhtNode :: Session -> Text -> C.CInt -> IO ()
+addDhtNode :: MonadIO m => Session -> Text -> C.CInt -> m ()
 addDhtNode ho host port =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
     hstr <- textToStdString host
     withPtr hstr $ \hstrPtr ->
       [CU.block| void {
@@ -366,15 +379,15 @@ addDhtNode ho host port =
          }
       |]
 
-dhtGetItem :: Session -> Sha1Hash -> IO ()
+dhtGetItem :: MonadIO m => Session -> Sha1Hash -> m ()
 dhtGetItem ho ih =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   withPtr ih $ \ihPtr ->
   [CU.exp| void { $(session * hoPtr)->dht_get_item(*$(sha1_hash * ihPtr)) } |]
 
-dhtGetItem' :: Session -> DhtItemKey -> Maybe ByteString -> IO ()
+dhtGetItem' :: MonadIO m => Session -> DhtItemKey -> Maybe ByteString -> m ()
 dhtGetItem' ho (DhtItemKey key) salt =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
     let salt' = fromMaybe BS.empty salt
     [CU.block| void {
         boost::array<char, 32> key;
@@ -385,9 +398,9 @@ dhtGetItem' ho (DhtItemKey key) salt =
     |]
 
 -- | Put dht item from bencoded data.
-dhtPutItem :: Session -> ByteString -> IO Sha1Hash
+dhtPutItem :: MonadIO m => Session -> ByteString -> m Sha1Hash
 dhtPutItem ho bencData =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   fromPtr [C.block| sha1_hash * {
               entry e = bdecode($bs-ptr:bencData, $bs-ptr:bencData + $bs-len:bencData);
               return new sha1_hash($(session * hoPtr)->dht_put_item(e));
@@ -400,26 +413,26 @@ dhtPutItem ho bencData =
 --    , boost::uint64_t&, std::string const&)> cb
 --    , std::string salt = std::string());
 
-addExtension :: Session -> Ptr C'Plugin -> IO ()
+addExtension :: MonadIO m => Session -> Ptr C'Plugin -> m ()
 addExtension ho plugin =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session * hoPtr)->add_extension(*$(Plugin * plugin)) } |]
 
-addTorrentExtension :: Session -> Ptr C'TorrentPlugin -> IO ()
+addTorrentExtension :: MonadIO m => Session -> Ptr C'TorrentPlugin -> m ()
 addTorrentExtension ho plugin =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session * hoPtr)->add_extension(*$(TorrentPlugin * plugin)) } |]
 
-loadCountryDb :: Session -> Text -> IO ()
+loadCountryDb :: MonadIO m => Session -> Text -> m ()
 loadCountryDb ho file =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   fstr <- textToStdString file
-  withPtr fstr $ \filePtr ->
+  liftIO . withPtr fstr $ \filePtr ->
     [CU.exp| void { $(session * hoPtr)->load_country_db($(string * filePtr)->c_str()) } |]
 
-loadAsnumDb :: Session -> Text -> IO ()
+loadAsnumDb :: MonadIO m => Session -> Text -> m ()
 loadAsnumDb ho file =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   fstr <- textToStdString file
   withPtr fstr $ \filePtr ->
     [CU.exp| void { $(session * hoPtr)->load_asnum_db($(string * filePtr)->c_str()) } |]
@@ -430,88 +443,103 @@ loadAsnumDb ho file =
 -- void set_ip_filter (ip_filter const& f);
 -- void set_port_filter (port_filter const& f);
 
-sessionId :: Session -> IO Sha1Hash
+sessionId :: MonadIO m => Session -> m Sha1Hash
 sessionId ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   fromPtr [CU.exp| sha1_hash * { new sha1_hash($(session * hoPtr)->id()) } |]
 
-setPeerId :: Session -> Sha1Hash -> IO ()
+setPeerId :: MonadIO m => Session -> Sha1Hash -> m ()
 setPeerId ho ih =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   withPtr ih $ \ihPtr ->
   [CU.exp| void { $(session * hoPtr)->set_peer_id(sha1_hash(*$(sha1_hash * ihPtr))) } |]
 
-setKey :: Session -> C.CInt -> IO ()
+setKey :: MonadIO m => Session -> C.CInt -> m ()
 setKey ho key =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session * hoPtr)->set_key($(int key)) } |]
 
-listenOn :: Session -> (C.CInt, C.CInt) -> Maybe Text -> IO ErrorCode
+-- | It can throw 'LibtorrentException'.
+listenOn :: MonadIO m => Session -> (C.CInt, C.CInt) -> Maybe Text -> m ()
 listenOn ho (fromPort, toPort) iface =
-  withPtr ho $ \hoPtr -> do
-  ec <- newErrorCode
-  withPtr ec $ \ecPtr ->
-    case iface of
-      Just iface' ->
-        withCString (T.unpack iface') $ \ifacePtr ->
-        [CU.exp| void { $(session * hoPtr)->listen_on( std::pair<int, int>($(int fromPort), $(int toPort)), *$(error_code * ecPtr), $(char * ifacePtr)) } |]
-      Nothing ->
-        [CU.exp| void { $(session * hoPtr)->listen_on( std::pair<int, int>($(int fromPort), $(int toPort)), *$(error_code * ecPtr)) } |]
-  return ec
+  liftIO . withPtr ho $ \hoPtr -> do
+    withErrorCode SessionError $ \ecPtr ->
+      case iface of
+        Just iface' ->
+          withCString (T.unpack iface') $ \ifacePtr ->
+          [CU.exp| void { $(session * hoPtr)->listen_on( std::pair<int, int>($(int fromPort), $(int toPort)), *$(error_code * ecPtr), $(char * ifacePtr)) } |]
+        Nothing ->
+          [CU.exp| void { $(session * hoPtr)->listen_on( std::pair<int, int>($(int fromPort), $(int toPort)), *$(error_code * ecPtr)) } |]
 
-isListening :: Session -> IO Bool
+isListening :: MonadIO m => Session -> m Bool
 isListening ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toBool <$> [CU.exp| bool { $(session * hoPtr)->is_listening() } |]
 
-listenPort :: Session -> IO C.CUShort
+listenPort :: MonadIO m => Session -> m C.CUShort
 listenPort ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| unsigned short { $(session * hoPtr)->listen_port() } |]
 
-sslListenPort :: Session -> IO C.CUShort
+sslListenPort :: MonadIO m => Session -> m C.CUShort
 sslListenPort ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| unsigned short { $(session * hoPtr)->ssl_listen_port() } |]
 
-removeTorrent :: Session -> TorrentHandle -> Maybe (BitFlags RemoveTorrentOptions) -> IO ()
+removeTorrent :: MonadIO m => Session -> TorrentHandle -> Maybe (BitFlags RemoveTorrentOptions) -> m ()
 removeTorrent ho th opts =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   withPtr th $ \thPtr -> do
   let opts' = fromIntegral $ maybe 0 fromEnum opts
   [CU.exp| void { $(session * hoPtr)->remove_torrent(*$(torrent_handle * thPtr), $(int opts')) } |]
 
-getSessionSettings :: Session -> IO SessionSettings
+getSessionSettings :: MonadIO m => Session -> m SessionSettings
 getSessionSettings ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   fromPtr [CU.exp| session_settings * { new session_settings($(session * hoPtr)->settings()) } |]
 
-setSessionSettings :: Session -> SessionSettings -> IO ()
+setSessionSettings :: MonadIO m => Session -> SessionSettings -> m ()
 setSessionSettings ho ds =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   withPtr ds $ \dsPtr ->
   [CU.exp| void { $(session * hoPtr)->set_settings(*$(session_settings * dsPtr)) } |]
 
-getPeSettings :: Session -> IO PeSettings
+getPeSettings :: MonadIO m => Session -> m PeSettings
 getPeSettings ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   fromPtr [CU.exp| pe_settings * { new pe_settings($(session * hoPtr)->get_pe_settings()) } |]
 
-setPeSettings :: Session -> PeSettings -> IO ()
+setPeSettings :: MonadIO m => Session -> PeSettings -> m ()
 setPeSettings ho ds =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   withPtr ds $ \dsPtr ->
   [CU.exp| void { $(session * hoPtr)->set_pe_settings(*$(pe_settings * dsPtr)) } |]
 
--- TODO:
--- void set_proxy (proxy_settings const& s);
--- proxy_settings proxy () const;
--- proxy_settings i2p_proxy () const;
--- void set_i2p_proxy (proxy_settings const& s);
+setProxy :: MonadIO m => Session -> ProxySettings -> m ()
+setProxy ho ps =
+  liftIO . withPtr ho $ \hoPtr ->
+  withPtr ps $ \psPtr ->
+  [CU.exp| void { $(session * hoPtr)->set_proxy(*$(proxy_settings * psPtr)) } |]
 
-popAlerts :: Session -> IO (StdDeque Alert)
+proxy :: MonadIO m => Session -> m ProxySettings
+proxy ho =
+  liftIO . withPtr ho $ \hoPtr ->
+  fromPtr [CU.exp| proxy_settings * { new proxy_settings($(session * hoPtr)->proxy()) } |]
+
+setI2pProxy :: MonadIO m => Session -> ProxySettings -> m ()
+setI2pProxy ho ps =
+  liftIO . withPtr ho $ \hoPtr ->
+  withPtr ps $ \psPtr ->
+  [CU.exp| void { $(session * hoPtr)->set_i2p_proxy(*$(proxy_settings * psPtr)) } |]
+
+i2pProxy :: MonadIO m => Session -> m ProxySettings
+i2pProxy ho =
+  liftIO . withPtr ho $ \hoPtr ->
+  fromPtr [CU.exp| proxy_settings * { new proxy_settings($(session * hoPtr)->i2p_proxy()) } |]
+
+popAlerts :: MonadIO m => Session -> m (StdDeque Alert)
 popAlerts ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   res <- newAlertDeque
   withPtr res $ \resPtr ->
     [C.exp| void { $(session * hoPtr)->pop_alerts($(DequeAlertPtr * resPtr)) } |]
@@ -519,22 +547,22 @@ popAlerts ho =
 
 -- alert const* wait_for_alert (time_duration max_wait);
 
-setAlertMask :: Session -> BitFlags AlertCategory -> IO ()
+setAlertMask :: MonadIO m => Session -> BitFlags AlertCategory -> m ()
 setAlertMask ho flags =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val = fromIntegral $ fromEnum flags
   [CU.exp| void { $(session * hoPtr)->set_alert_mask($(uint32_t val)) } |]
 
 -- FIXME: it causes a deadlock in C code but it'll be removed in next release of libtorrent.
 -- -- | Set alerts handler for 'Session'. Returns finalizer for allocated 'FunPtr'.
--- setAlertDispatch :: Session -> (Alert -> IO ()) -> IO (FunPtr C'AlertDispatchCallback)
+-- setAlertDispatch :: MonadIO m => Session -> (Alert -> IO ()) -> IO (FunPtr C'AlertDispatchCallback)
 -- setAlertDispatch ses cb = do
 --   let c'cb = \aPtr -> (fromPtr $ pure aPtr) >>= cb
 --   c'setAlertDispatch ses c'cb
 
--- c'setAlertDispatch :: Session -> C'AlertDispatchCallback -> IO (FunPtr C'AlertDispatchCallback)
+-- c'setAlertDispatch :: MonadIO m => Session -> C'AlertDispatchCallback -> IO (FunPtr C'AlertDispatchCallback)
 -- c'setAlertDispatch ho cb =
---   withPtr ho $ \hoPtr -> do
+--   liftIO . withPtr ho $ \hoPtr -> do
 --     cbPtr <- $(C.mkFunPtr [t| C'AlertDispatchCallback |]) cb
 --     [C.block| void {
 --         $(session * hoPtr)->set_alert_dispatch([=](auto_ptr<alert> aptr) { $(AlertDispatchCallback cbPtr)(aptr.release());});
@@ -542,41 +570,40 @@ setAlertMask ho flags =
 --     |]
 --     return cbPtr
 
-stopLsd :: Session -> IO ()
+stopLsd :: MonadIO m => Session -> m ()
 stopLsd ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session * hoPtr)->stop_lsd() } |]
 
-startLsd :: Session -> IO ()
+startLsd :: MonadIO m => Session -> m ()
 startLsd ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session * hoPtr)->start_lsd() } |]
 
-stopUpnp :: Session -> IO ()
+stopUpnp :: MonadIO m => Session -> m ()
 stopUpnp ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session * hoPtr)->stop_upnp() } |]
 
-startUpnp :: Session -> IO ()
+startUpnp :: MonadIO m => Session -> m ()
 startUpnp ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session * hoPtr)->start_upnp() } |]
 
-deletePortMapping :: Session -> C.CInt -> IO ()
+deletePortMapping :: MonadIO m => Session -> C.CInt -> m ()
 deletePortMapping ho handle =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session * hoPtr)->delete_port_mapping($(int handle)) } |]
 
 -- TODO:
 -- int add_port_mapping (protocol_type t, int external_port, int local_port);
 
-stopNatpmp :: Session -> IO ()
+stopNatpmp :: MonadIO m => Session -> m ()
 stopNatpmp ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session * hoPtr)->stop_natpmp() } |]
 
-startNatpmp :: Session -> IO ()
+startNatpmp :: MonadIO m => Session -> m ()
 startNatpmp ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session * hoPtr)->start_natpmp() } |]
-

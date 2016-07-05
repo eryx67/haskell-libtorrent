@@ -9,6 +9,7 @@ module Libtorrent.FileStorage.FileSlice (FileSlice(..)
                                         , getFileSliceSize
                                         ) where
 
+import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Foreign.C.Types (CInt)
 import           Foreign.ForeignPtr ( ForeignPtr, withForeignPtr )
 import qualified Language.C.Inline as C
@@ -42,17 +43,17 @@ instance WithPtr FileSlice where
   withPtr (FileSlice fptr) = withForeignPtr fptr
 
 
-getFileIndex :: FileSlice -> IO CInt
+getFileIndex :: MonadIO m => FileSlice -> m CInt
 getFileIndex ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(file_slice * hoPtr)->file_index } |]
 
-getFileSliceOffset :: FileSlice -> IO C.CSize
+getFileSliceOffset :: MonadIO m => FileSlice -> m C.CSize
 getFileSliceOffset ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| size_t { $(file_slice * hoPtr)->offset } |]
 
-getFileSliceSize :: FileSlice -> IO C.CSize
+getFileSliceSize :: MonadIO m => FileSlice -> m C.CSize
 getFileSliceSize ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| size_t { $(file_slice * hoPtr)->size } |]

@@ -20,6 +20,7 @@ module Libtorrent.Session.PeSettings (PeSettings
                                      , setPreferRc4
                                      ) where
 
+import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Foreign.ForeignPtr ( ForeignPtr, withForeignPtr )
 import           Foreign.Marshal.Utils (toBool, fromBool)
 import qualified Language.C.Inline as C
@@ -43,14 +44,14 @@ data PeEncPolicy =
   EncPolicyForced
   | EncPolicyEnabled
   | EncPolicyDisabled
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 data PeEncLevel =
   EncLevelNone
   | EncLevelPlaintext
   | EncLevelRc4
   | EncLevelBoth
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 newtype PeSettings = PeSettings { unPeSettings :: ForeignPtr (CType PeSettings)}
 
@@ -67,50 +68,50 @@ instance FromPtr PeSettings where
 instance WithPtr PeSettings where
   withPtr (PeSettings fptr) = withForeignPtr fptr
 
-newPeSettings :: IO PeSettings
+newPeSettings :: MonadIO m =>  m PeSettings
 newPeSettings =
-  fromPtr [CU.exp| pe_settings * { new pe_settings() }|]
+  liftIO $ fromPtr [CU.exp| pe_settings * { new pe_settings() }|]
 
-getOutEncPolicy :: PeSettings -> IO PeEncPolicy
+getOutEncPolicy :: MonadIO m =>  PeSettings -> m PeEncPolicy
 getOutEncPolicy ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   (toEnum . fromIntegral) <$> [CU.exp| uint8_t { $(pe_settings * hoPtr)->out_enc_policy } |]
 
-setOutEncPolicy :: PeSettings -> PeEncPolicy -> IO ()
+setOutEncPolicy :: MonadIO m =>  PeSettings -> PeEncPolicy -> m ()
 setOutEncPolicy ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromIntegral $ fromEnum val
   [CU.exp| void { $(pe_settings * hoPtr)->out_enc_policy = $(uint8_t val')} |]
 
-getInEncPolicy :: PeSettings -> IO PeEncPolicy
+getInEncPolicy :: MonadIO m =>  PeSettings -> m PeEncPolicy
 getInEncPolicy ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   (toEnum . fromIntegral) <$> [CU.exp| uint8_t { $(pe_settings * hoPtr)->in_enc_policy } |]
 
-setInEncPolicy :: PeSettings -> PeEncPolicy -> IO ()
+setInEncPolicy :: MonadIO m =>  PeSettings -> PeEncPolicy -> m ()
 setInEncPolicy ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromIntegral $ fromEnum val
   [CU.exp| void { $(pe_settings * hoPtr)->in_enc_policy = $(uint8_t val')} |]
 
-getAllowedEncLevel :: PeSettings -> IO PeEncLevel
+getAllowedEncLevel :: MonadIO m =>  PeSettings -> m PeEncLevel
 getAllowedEncLevel ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   (toEnum . fromIntegral) <$> [CU.exp| uint8_t { $(pe_settings * hoPtr)->allowed_enc_level } |]
 
-setAllowedEncLevel :: PeSettings -> PeEncLevel -> IO ()
+setAllowedEncLevel :: MonadIO m =>  PeSettings -> PeEncLevel -> m ()
 setAllowedEncLevel ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromIntegral $ fromEnum val
   [CU.exp| void { $(pe_settings * hoPtr)->allowed_enc_level = $(uint8_t val')} |]
 
-getPreferRc4 :: PeSettings -> IO Bool
+getPreferRc4 :: MonadIO m =>  PeSettings -> m Bool
 getPreferRc4 ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toBool <$> [CU.exp| bool { $(pe_settings * hoPtr)->prefer_rc4 } |]
 
-setPreferRc4 :: PeSettings -> Bool -> IO ()
+setPreferRc4 :: MonadIO m =>  PeSettings -> Bool -> m ()
 setPreferRc4 ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(pe_settings * hoPtr)->prefer_rc4 = $(bool val')} |]

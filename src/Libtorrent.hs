@@ -16,6 +16,7 @@ import           System.IO.Unsafe (unsafePerformIO)
 import           Libtorrent.Alert as Import
 import           Libtorrent.Bencode as Import
 import           Libtorrent.Bitfield as Import
+import           Libtorrent.CreateTorrent as Import
 import           Libtorrent.ErrorCode as Import
 import           Libtorrent.Exceptions as Import
 import           Libtorrent.Extensions as Import
@@ -27,6 +28,7 @@ import           Libtorrent.Session as Import
 import           Libtorrent.Session.AddTorrentParams as Import
 import           Libtorrent.Session.DhtSettings as Import
 import           Libtorrent.Session.PeSettings as Import
+import           Libtorrent.Session.ProxySettings as Import
 import           Libtorrent.Session.SessionSettings as Import
 import           Libtorrent.Session.SessionStatus as Import
 import           Libtorrent.Sha1Hash as Import
@@ -50,4 +52,4 @@ C.using "namespace libtorrent"
 
 version :: Text
 version =
-  T.pack . unsafePerformIO $ [CU.exp| char * { version() }|] >>= peekCAString
+  T.pack . unsafePerformIO $ [CU.exp| const char * { version() }|] >>= peekCAString

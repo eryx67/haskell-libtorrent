@@ -3,6 +3,7 @@
 {-# LANGUAGE QuasiQuotes          #-}
 {-# LANGUAGE TupleSections        #-}
 {-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE OverloadedStrings    #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | <http://www.libtorrent.org/reference-Storage.html#file_storage file_storage> structure for "Libtorrent"
 module Libtorrent.FileStorage (FileEntry(..)
@@ -10,6 +11,7 @@ module Libtorrent.FileStorage (FileEntry(..)
                               , FileStorage(..)
                               , FileStorageFlags(..)
                               , FileFlags(..)
+                              , newFileStorage
                               , getPath
                               , getSymlinkPath
                               , getOffset
@@ -35,7 +37,7 @@ module Libtorrent.FileStorage (FileEntry(..)
                               , fileEntryAt
                               , fileStorageTotalSize
                               , setFileStorageNumPieces
-                              , fileStorgaeNumPieces
+                              , fileStorageNumPieces
                               , setFileStoragePieceLength
                               , fileStoragePieceLength
                               , fileStoragePieceSize
@@ -56,6 +58,7 @@ module Libtorrent.FileStorage (FileEntry(..)
                               , fileIndexAtOffset
                               ) where
 
+import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Data.ByteString (ByteString)
 import           Data.Maybe (fromMaybe)
 import           Data.Text (Text)
@@ -92,14 +95,14 @@ data FileStorageFlags =
   | AttributeHidden
   | AttributeExecutable
   | AttributeSymlink
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 data FileFlags =
   FlagPadFile
   | FlagHidden
   | FlagExecutable
   | FlagSymlink
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 newtype FileEntry = FileEntry { unFileEntry :: ForeignPtr (CType FileEntry)}
 
@@ -116,62 +119,62 @@ instance FromPtr FileEntry where
 instance WithPtr FileEntry where
   withPtr (FileEntry fptr) = withForeignPtr fptr
 
-getPath :: FileEntry -> IO Text
+getPath :: MonadIO m =>  FileEntry -> m Text
 getPath ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   res <- fromPtr [CU.exp| string * { new std::string($(file_entry * hoPtr)->path) } |]
   stdStringToText res
 
-getSymlinkPath :: FileEntry -> IO Text
+getSymlinkPath :: MonadIO m =>  FileEntry -> m Text
 getSymlinkPath ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   res <- fromPtr [CU.exp| string * { new std::string($(file_entry * hoPtr)->symlink_path) } |]
   stdStringToText res
 
-getOffset :: FileEntry -> IO C.CSize
+getOffset :: MonadIO m =>  FileEntry -> m C.CSize
 getOffset ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| size_t { $(file_entry * hoPtr)->offset } |]
 
-getSize :: FileEntry -> IO C.CSize
+getSize :: MonadIO m =>  FileEntry -> m C.CSize
 getSize ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| size_t { $(file_entry * hoPtr)->size } |]
 
-getFileBase :: FileEntry -> IO C.CSize
+getFileBase :: MonadIO m =>  FileEntry -> m C.CSize
 getFileBase ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| size_t { $(file_entry * hoPtr)->file_base } |]
 
-getMtime :: FileEntry -> IO C.CTime
+getMtime :: MonadIO m =>  FileEntry -> m C.CTime
 getMtime ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| time_t { $(file_entry * hoPtr)->mtime } |]
 
-getFilehash :: FileEntry -> IO ByteString
+getFilehash :: MonadIO m =>  FileEntry -> m ByteString
 getFilehash ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   res <- fromPtr [CU.exp| sha1_hash * { new sha1_hash($(file_entry * hoPtr)->filehash) } |]
   sha1HashToByteString res
 
-getPadFile :: FileEntry -> IO CInt
+getPadFile :: MonadIO m =>  FileEntry -> m CInt
 getPadFile ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(file_entry * hoPtr)->pad_file } |]
 
-getHiddenAttribute :: FileEntry -> IO Bool
+getHiddenAttribute :: MonadIO m =>  FileEntry -> m Bool
 getHiddenAttribute ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toBool <$> [CU.exp| bool { $(file_entry * hoPtr)->hidden_attribute } |]
 
-getExecutableAttribute :: FileEntry -> IO Bool
+getExecutableAttribute :: MonadIO m =>  FileEntry -> m Bool
 getExecutableAttribute ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toBool <$> [CU.exp| bool { $(file_entry * hoPtr)->executable_attribute } |]
 
-getSymlinkAttribute :: FileEntry -> IO Bool
+getSymlinkAttribute :: MonadIO m =>  FileEntry -> m Bool
 getSymlinkAttribute ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toBool <$> [CU.exp| bool { $(file_entry * hoPtr)->symlink_attribute } |]
 
 newtype FileStorage = FileStorage { unFileStorage :: ForeignPtr (CType FileStorage)}
@@ -189,166 +192,172 @@ instance FromPtr FileStorage where
 instance WithPtr FileStorage where
   withPtr (FileStorage fptr) = withForeignPtr fptr
 
-fileStorageIsValid :: FileStorage -> IO Bool
+newFileStorage :: MonadIO m =>  m FileStorage
+newFileStorage =
+  liftIO $ fromPtr [C.exp| file_storage * { new file_storage()} |]
+
+fileStorageIsValid :: MonadIO m =>  FileStorage -> m Bool
 fileStorageIsValid ho =
-  withPtr ho $ \hoPtr ->
-  toBool <$> [CU.exp| bool { $(file_storage * hoPtr)->is_valid() } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  toBool <$> [C.exp| bool { $(file_storage * hoPtr)->is_valid() } |]
 
-reserve :: FileStorage -> CInt -> IO ()
+reserve :: MonadIO m =>  FileStorage -> CInt -> m ()
 reserve ho num_files =
-  withPtr ho $ \hoPtr ->
-  [CU.exp| void { $(file_storage * hoPtr)->reserve($(int num_files)) } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  [C.exp| void { $(file_storage * hoPtr)->reserve($(int num_files)) } |]
 
-addFile :: FileStorage -> Text -> C.CSize -> BitFlags FileStorageFlags -> Maybe C.CTime -> IO ()
-addFile ho fpath size flags mtime =
-  withPtr ho $ \hoPtr -> do
+addFile :: MonadIO m =>  FileStorage -> Text -> C.CSize -> BitFlags FileStorageFlags -> Maybe C.CTime -> Maybe Text -> m ()
+addFile ho fpath size flags mtime slink =
+  liftIO . withPtr ho $ \hoPtr -> do
   fpath' <- textToStdString fpath
+  slink' <- textToStdString $ fromMaybe "" slink
   let flags' = fromIntegral $ fromEnum flags
       mtime' = fromMaybe 0 mtime
   withPtr fpath' $ \fpathPtr ->
-    [CU.exp| void { $(file_storage * hoPtr)->add_file(*$(string * fpathPtr), $(size_t size), $(int flags'), $(time_t mtime')) } |]
+    withPtr slink' $ \slinkPtr ->
+    [C.exp| void { $(file_storage * hoPtr)->add_file(*$(string * fpathPtr), $(size_t size), $(int flags'), $(time_t mtime'), *$(string * slinkPtr)) } |]
 
-addFileFromEntry :: FileStorage -> FileEntry -> IO ()
+addFileFromEntry :: MonadIO m =>  FileStorage -> FileEntry -> m ()
 addFileFromEntry ho fe =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   withPtr fe $ \fePtr ->
-  [CU.exp| void { $(file_storage * hoPtr)->add_file(*$(file_entry * fePtr)) } |]
+  [C.exp| void { $(file_storage * hoPtr)->add_file(*$(file_entry * fePtr)) } |]
 
-fileStorageRenameFile :: FileStorage -> CInt -> Text -> IO ()
+fileStorageRenameFile :: MonadIO m =>  FileStorage -> CInt -> Text -> m ()
 fileStorageRenameFile ho idx fname =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   fname' <- textToStdString fname
   withPtr fname' $ \fnamePtr ->
-    [CU.exp| void { $(file_storage * hoPtr)->rename_file($(int idx), *$(string * fnamePtr)) } |]
+    [C.exp| void { $(file_storage * hoPtr)->rename_file($(int idx), *$(string * fnamePtr)) } |]
 
-fileStorageMapBlock :: FileStorage -> CInt -> C.CSize -> CInt -> IO (StdVector FileSlice)
+fileStorageMapBlock :: MonadIO m =>  FileStorage -> CInt -> C.CSize -> CInt -> m (StdVector FileSlice)
 fileStorageMapBlock ho piece offset size =
-  withPtr ho $ \hoPtr ->
-  fromPtr [CU.exp| VectorFileSlice * { new VectorFileSlice($(file_storage * hoPtr)->map_block($(int piece), $(size_t offset), $(int size))) } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  fromPtr [C.exp| VectorFileSlice * { new VectorFileSlice($(file_storage * hoPtr)->map_block($(int piece), $(size_t offset), $(int size))) } |]
 
-fileStorageMapFile :: FileStorage -> CInt -> C.CSize -> CInt -> IO PeerRequest
+fileStorageMapFile :: MonadIO m =>  FileStorage -> CInt -> C.CSize -> CInt -> m PeerRequest
 fileStorageMapFile ho file offset size =
-  withPtr ho $ \hoPtr ->
-  fromPtr [CU.exp| peer_request * { new peer_request($(file_storage * hoPtr)->map_file($(int file), $(size_t offset), $(int size))) } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  fromPtr [C.exp| peer_request * { new peer_request($(file_storage * hoPtr)->map_file($(int file), $(size_t offset), $(int size))) } |]
 
-fileStorageNumFiles :: FileStorage -> IO CInt
+fileStorageNumFiles :: MonadIO m =>  FileStorage -> m CInt
 fileStorageNumFiles ho =
-  withPtr ho $ \hoPtr ->
-  [CU.exp| int { $(file_storage * hoPtr)->num_files() } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  [C.exp| int { $(file_storage * hoPtr)->num_files() } |]
 
-fileEntryAt :: FileStorage -> CInt ->IO FileEntry
+fileEntryAt :: MonadIO m =>  FileStorage -> CInt ->m FileEntry
 fileEntryAt ho idx =
-  withPtr ho $ \hoPtr ->
-  fromPtr [CU.exp| file_entry * { new file_entry($(file_storage * hoPtr)->at($(int idx))) } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  fromPtr [C.exp| file_entry * { new file_entry($(file_storage * hoPtr)->at($(int idx))) } |]
 
-fileStorageTotalSize :: FileStorage -> IO C.CSize
+fileStorageTotalSize :: MonadIO m =>  FileStorage -> m C.CSize
 fileStorageTotalSize ho =
-  withPtr ho $ \hoPtr ->
-  [CU.exp| size_t { $(file_storage * hoPtr)->total_size() } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  [C.exp| size_t { $(file_storage * hoPtr)->total_size() } |]
 
-setFileStorageNumPieces :: FileStorage -> CInt -> IO ()
+setFileStorageNumPieces :: MonadIO m =>  FileStorage -> CInt -> m ()
 setFileStorageNumPieces ho n =
-  withPtr ho $ \hoPtr ->
-  [CU.exp| void { $(file_storage * hoPtr)->set_num_pieces($(int n)) } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  [C.exp| void { $(file_storage * hoPtr)->set_num_pieces($(int n)) } |]
 
-fileStorgaeNumPieces :: FileStorage -> IO CInt
-fileStorgaeNumPieces ho =
-  withPtr ho $ \hoPtr ->
-  [CU.exp| int { $(file_storage * hoPtr)->num_pieces() } |]
+fileStorageNumPieces :: MonadIO m =>  FileStorage -> m CInt
+fileStorageNumPieces ho =
+  liftIO . withPtr ho $ \hoPtr ->
+  [C.exp| int { $(file_storage * hoPtr)->num_pieces() } |]
 
-setFileStoragePieceLength :: FileStorage -> CInt -> IO ()
+setFileStoragePieceLength :: MonadIO m =>  FileStorage -> CInt -> m ()
 setFileStoragePieceLength ho l =
-  withPtr ho $ \hoPtr ->
-  [CU.exp| void { $(file_storage * hoPtr)->set_piece_length($(int l)) } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  [C.exp| void { $(file_storage * hoPtr)->set_piece_length($(int l)) } |]
 
-fileStoragePieceLength :: FileStorage -> IO CInt
+fileStoragePieceLength :: MonadIO m =>  FileStorage -> m CInt
 fileStoragePieceLength ho =
-  withPtr ho $ \hoPtr ->
-  [CU.exp| int { $(file_storage * hoPtr)->piece_length() } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  [C.exp| int { $(file_storage * hoPtr)->piece_length() } |]
 
-fileStoragePieceSize :: FileStorage -> CInt -> IO CInt
+fileStoragePieceSize :: MonadIO m =>  FileStorage -> CInt -> m CInt
 fileStoragePieceSize ho idx =
-  withPtr ho $ \hoPtr ->
-  [CU.exp| int { $(file_storage * hoPtr)->piece_size($(int idx)) } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  [C.exp| int { $(file_storage * hoPtr)->piece_size($(int idx)) } |]
 
-setFileStorageName :: FileStorage -> Text -> IO ()
+setFileStorageName :: MonadIO m =>  FileStorage -> Text -> m ()
 setFileStorageName ho n =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   sn <- textToStdString n
   withPtr sn $ \snPtr ->
-    [CU.exp| void { $(file_storage * hoPtr)->set_name(*$(string * snPtr)) } |]
+    [C.exp| void { $(file_storage * hoPtr)->set_name(*$(string * snPtr)) } |]
 
-fileStorageName :: FileStorage -> IO Text
+fileStorageName :: MonadIO m =>  FileStorage -> m Text
 fileStorageName ho =
-  withPtr ho $ \hoPtr -> do
-  str <- fromPtr [CU.exp| string * { new std::string($(file_storage * hoPtr)->name()) } |]
+  liftIO . withPtr ho $ \hoPtr -> do
+  str <- fromPtr [C.exp| string * { new std::string($(file_storage * hoPtr)->name()) } |]
   stdStringToText str
 
-fileStorageOptimize :: FileStorage -> IO ()
+fileStorageOptimize :: MonadIO m =>  FileStorage -> m ()
 fileStorageOptimize ho =
-  withPtr ho $ \hoPtr ->
-  [CU.exp| void { $(file_storage * hoPtr)->optimize() } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  [C.exp| void { $(file_storage * hoPtr)->optimize() } |]
 
-fileSize :: FileStorage -> CInt -> IO C.CSize
+fileSize :: MonadIO m =>  FileStorage -> CInt -> m C.CSize
 fileSize ho idx =
-  withPtr ho $ \hoPtr ->
-  [CU.exp| size_t { $(file_storage * hoPtr)->file_size($(int idx)) } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  [C.exp| size_t { $(file_storage * hoPtr)->file_size($(int idx)) } |]
 
-fileStorageHash :: FileStorage -> CInt -> IO ByteString
+fileStorageHash :: MonadIO m =>  FileStorage -> CInt -> m ByteString
 fileStorageHash ho idx =
-  withPtr ho $ \hoPtr -> do
-  h <- fromPtr [CU.exp| sha1_hash * { new sha1_hash($(file_storage * hoPtr)->hash($(int idx))) } |]
+  liftIO . withPtr ho $ \hoPtr -> do
+  h <- fromPtr [C.exp| sha1_hash * { new sha1_hash($(file_storage * hoPtr)->hash($(int idx))) } |]
   sha1HashToByteString h
   
-fileName :: FileStorage -> CInt -> IO Text
+fileName :: MonadIO m =>  FileStorage -> CInt -> m Text
 fileName ho idx =
-  withPtr ho $ \hoPtr -> do
-  str <- fromPtr [CU.exp| string * { new std::string($(file_storage * hoPtr)->file_name($(int idx))) } |]
+  liftIO . withPtr ho $ \hoPtr -> do
+  str <- fromPtr [C.exp| string * { new std::string($(file_storage * hoPtr)->file_name($(int idx))) } |]
   stdStringToText str
 
-fileOffset :: FileStorage -> CInt -> IO C.CSize
+fileOffset :: MonadIO m =>  FileStorage -> CInt -> m C.CSize
 fileOffset ho idx =
-  withPtr ho $ \hoPtr ->
-  [CU.exp| size_t { $(file_storage * hoPtr)->file_offset($(int idx)) } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  [C.exp| size_t { $(file_storage * hoPtr)->file_offset($(int idx)) } |]
 
-fileStorageMtime :: FileStorage -> CInt -> IO C.CTime
+fileStorageMtime :: MonadIO m =>  FileStorage -> CInt -> m C.CTime
 fileStorageMtime ho idx =
-  withPtr ho $ \hoPtr ->
-  [CU.exp| time_t { $(file_storage * hoPtr)->mtime($(int idx)) } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  [C.exp| time_t { $(file_storage * hoPtr)->mtime($(int idx)) } |]
 
-padFileAt :: FileStorage -> CInt -> IO Bool
+padFileAt :: MonadIO m =>  FileStorage -> CInt -> m Bool
 padFileAt ho idx =
-  withPtr ho $ \hoPtr ->
-  toBool <$> [CU.exp| bool { $(file_storage * hoPtr)->pad_file_at($(int idx)) } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  toBool <$> [C.exp| bool { $(file_storage * hoPtr)->pad_file_at($(int idx)) } |]
 
-symlink :: FileStorage -> CInt -> IO Text
+symlink :: MonadIO m =>  FileStorage -> CInt -> m Text
 symlink ho idx =
-  withPtr ho $ \hoPtr -> do
-  str <- fromPtr [CU.exp| string * { new std::string($(file_storage * hoPtr)->symlink($(int idx))) } |]
+  liftIO . withPtr ho $ \hoPtr -> do
+  str <- fromPtr [C.exp| string * { new std::string($(file_storage * hoPtr)->symlink($(int idx))) } |]
   stdStringToText str
 
-filePath :: FileStorage -> CInt -> IO Text
+filePath :: MonadIO m =>  FileStorage -> CInt -> m Text
 filePath ho idx =
-  withPtr ho $ \hoPtr -> do
-  str <- fromPtr [CU.exp| string * { new std::string($(file_storage * hoPtr)->file_path($(int idx))) } |]
+  liftIO . withPtr ho $ \hoPtr -> do
+  str <- fromPtr [C.exp| string * { new std::string($(file_storage * hoPtr)->file_path($(int idx))) } |]
   stdStringToText str
 
-fileFlags :: FileStorage -> CInt -> IO (BitFlags FileFlags)
+fileFlags :: MonadIO m =>  FileStorage -> CInt -> m (BitFlags FileFlags)
 fileFlags ho idx =
-  withPtr ho $ \hoPtr ->
-  toEnum . fromIntegral <$> [CU.exp| int { $(file_storage * hoPtr)->file_flags($(int idx)) } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  toEnum . fromIntegral <$> [C.exp| int { $(file_storage * hoPtr)->file_flags($(int idx)) } |]
 
-setFileBase :: FileStorage -> CInt -> C.CSize -> IO ()
+setFileBase :: MonadIO m =>  FileStorage -> CInt -> C.CSize -> m ()
 setFileBase ho idx off =
-  withPtr ho $ \hoPtr ->
-  [CU.exp| void { $(file_storage * hoPtr)->set_file_base($(int idx), $(size_t off)) } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  [C.exp| void { $(file_storage * hoPtr)->set_file_base($(int idx), $(size_t off)) } |]
 
-fileBase :: FileStorage -> CInt -> IO C.CSize
+fileBase :: MonadIO m =>  FileStorage -> CInt -> m C.CSize
 fileBase ho idx =
-  withPtr ho $ \hoPtr ->
-  [CU.exp| size_t { $(file_storage * hoPtr)->file_base($(int idx)) } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  [C.exp| size_t { $(file_storage * hoPtr)->file_base($(int idx)) } |]
 
-fileIndexAtOffset :: FileStorage -> C.CSize -> IO CInt
+fileIndexAtOffset :: MonadIO m =>  FileStorage -> C.CSize -> m CInt
 fileIndexAtOffset ho offset =
-  withPtr ho $ \hoPtr ->
-  [CU.exp| int { $(file_storage * hoPtr)->file_index_at_offset($(size_t offset)) } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  [C.exp| int { $(file_storage * hoPtr)->file_index_at_offset($(size_t offset)) } |]

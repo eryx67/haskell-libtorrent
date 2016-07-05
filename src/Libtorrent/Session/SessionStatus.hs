@@ -71,6 +71,7 @@ module Libtorrent.Session.SessionStatus (SessionStatus
                                         ) where
 
 
+import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Data.Word (Word64)
 import           Foreign.C.Types (CInt)
 import           Foreign.ForeignPtr ( ForeignPtr, withForeignPtr )
@@ -124,299 +125,299 @@ instance FromPtr UtpStatus where
 instance WithPtr UtpStatus where
   withPtr (UtpStatus fptr) = withForeignPtr fptr
 
-getHasIncomingConnections :: SessionStatus -> IO Bool
+getHasIncomingConnections :: MonadIO m =>  SessionStatus -> m Bool
 getHasIncomingConnections ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toBool <$> [CU.exp| bool { $(session_status * hoPtr)->has_incoming_connections } |]
 
-getSessionUploadRate :: SessionStatus -> IO CInt
+getSessionUploadRate :: MonadIO m =>  SessionStatus -> m CInt
 getSessionUploadRate ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_status * hoPtr)->upload_rate } |]
 
-getSessionDownloadRate :: SessionStatus -> IO CInt
+getSessionDownloadRate :: MonadIO m =>  SessionStatus -> m CInt
 getSessionDownloadRate ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_status * hoPtr)->download_rate } |]
 
-getSessionTotalDownload :: SessionStatus -> IO C.CSize
+getSessionTotalDownload :: MonadIO m =>  SessionStatus -> m C.CSize
 getSessionTotalDownload ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| size_t { $(session_status * hoPtr)->total_download } |]
 
-getSessionTotalUpload :: SessionStatus -> IO C.CSize
+getSessionTotalUpload :: MonadIO m =>  SessionStatus -> m C.CSize
 getSessionTotalUpload ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| size_t { $(session_status * hoPtr)->total_upload } |]
 
-getSessionPayloadUploadRate :: SessionStatus -> IO CInt
+getSessionPayloadUploadRate :: MonadIO m =>  SessionStatus -> m CInt
 getSessionPayloadUploadRate ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_status * hoPtr)->payload_upload_rate } |]
 
-getSessionPayloadDownloadRate :: SessionStatus -> IO CInt
+getSessionPayloadDownloadRate :: MonadIO m =>  SessionStatus -> m CInt
 getSessionPayloadDownloadRate ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_status * hoPtr)->payload_download_rate } |]
 
-getSessionTotalPayloadDownload :: SessionStatus -> IO C.CSize
+getSessionTotalPayloadDownload :: MonadIO m =>  SessionStatus -> m C.CSize
 getSessionTotalPayloadDownload ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| size_t { $(session_status * hoPtr)->total_payload_download } |]
 
-getSessionTotalPayloadUpload :: SessionStatus -> IO C.CSize
+getSessionTotalPayloadUpload :: MonadIO m =>  SessionStatus -> m C.CSize
 getSessionTotalPayloadUpload ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| size_t { $(session_status * hoPtr)->total_payload_upload } |]
 
-getIpOverheadUploadRate :: SessionStatus -> IO CInt
+getIpOverheadUploadRate :: MonadIO m =>  SessionStatus -> m CInt
 getIpOverheadUploadRate ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_status * hoPtr)->ip_overhead_upload_rate } |]
 
-getIpOverheadDownloadRate :: SessionStatus -> IO CInt
+getIpOverheadDownloadRate :: MonadIO m =>  SessionStatus -> m CInt
 getIpOverheadDownloadRate ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_status * hoPtr)->ip_overhead_download_rate } |]
 
-getTotalIpOverheadDownload :: SessionStatus -> IO C.CSize
+getTotalIpOverheadDownload :: MonadIO m =>  SessionStatus -> m C.CSize
 getTotalIpOverheadDownload ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| size_t { $(session_status * hoPtr)->total_ip_overhead_download } |]
 
-getTotalIpOverheadUpload :: SessionStatus -> IO C.CSize
+getTotalIpOverheadUpload :: MonadIO m =>  SessionStatus -> m C.CSize
 getTotalIpOverheadUpload ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| size_t { $(session_status * hoPtr)->total_ip_overhead_upload } |]
 
-getDhtUploadRate :: SessionStatus -> IO CInt
+getDhtUploadRate :: MonadIO m =>  SessionStatus -> m CInt
 getDhtUploadRate ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_status * hoPtr)->dht_upload_rate } |]
 
-getDhtDownloadRate :: SessionStatus -> IO CInt
+getDhtDownloadRate :: MonadIO m =>  SessionStatus -> m CInt
 getDhtDownloadRate ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_status * hoPtr)->dht_download_rate } |]
 
-getTotalDhtDownload :: SessionStatus -> IO C.CSize
+getTotalDhtDownload :: MonadIO m =>  SessionStatus -> m C.CSize
 getTotalDhtDownload ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| size_t { $(session_status * hoPtr)->total_dht_download } |]
 
-getTotalDhtUpload :: SessionStatus -> IO C.CSize
+getTotalDhtUpload :: MonadIO m =>  SessionStatus -> m C.CSize
 getTotalDhtUpload ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| size_t { $(session_status * hoPtr)->total_dht_upload } |]
 
-getTrackerUploadRate :: SessionStatus -> IO CInt
+getTrackerUploadRate :: MonadIO m =>  SessionStatus -> m CInt
 getTrackerUploadRate ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_status * hoPtr)->tracker_upload_rate } |]
 
-getTrackerDownloadRate :: SessionStatus -> IO CInt
+getTrackerDownloadRate :: MonadIO m =>  SessionStatus -> m CInt
 getTrackerDownloadRate ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_status * hoPtr)->tracker_download_rate } |]
 
-getTotalTrackerDownload :: SessionStatus -> IO C.CSize
+getTotalTrackerDownload :: MonadIO m =>  SessionStatus -> m C.CSize
 getTotalTrackerDownload ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| size_t { $(session_status * hoPtr)->total_tracker_download } |]
 
-getTotalTrackerUpload :: SessionStatus -> IO C.CSize
+getTotalTrackerUpload :: MonadIO m =>  SessionStatus -> m C.CSize
 getTotalTrackerUpload ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| size_t { $(session_status * hoPtr)->total_tracker_upload } |]
 
-getSessionTotalRedundantBytes :: SessionStatus -> IO C.CSize
+getSessionTotalRedundantBytes :: MonadIO m =>  SessionStatus -> m C.CSize
 getSessionTotalRedundantBytes ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| size_t { $(session_status * hoPtr)->total_redundant_bytes } |]
 
-getSessionTotalFailedBytes :: SessionStatus -> IO C.CSize
+getSessionTotalFailedBytes :: MonadIO m =>  SessionStatus -> m C.CSize
 getSessionTotalFailedBytes ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| size_t { $(session_status * hoPtr)->total_failed_bytes } |]
 
-getSessionNumPeers :: SessionStatus -> IO CInt
+getSessionNumPeers :: MonadIO m =>  SessionStatus -> m CInt
 getSessionNumPeers ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_status * hoPtr)->num_peers } |]
 
-getNumUnchoked :: SessionStatus -> IO CInt
+getNumUnchoked :: MonadIO m =>  SessionStatus -> m CInt
 getNumUnchoked ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_status * hoPtr)->num_unchoked } |]
 
-getAllowedUploadSlots :: SessionStatus -> IO CInt
+getAllowedUploadSlots :: MonadIO m =>  SessionStatus -> m CInt
 getAllowedUploadSlots ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_status * hoPtr)->allowed_upload_slots } |]
 
-getSessionUpBandwidthQueue :: SessionStatus -> IO CInt
+getSessionUpBandwidthQueue :: MonadIO m =>  SessionStatus -> m CInt
 getSessionUpBandwidthQueue ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_status * hoPtr)->up_bandwidth_queue } |]
 
-getSessionDownBandwidthQueue :: SessionStatus -> IO CInt
+getSessionDownBandwidthQueue :: MonadIO m =>  SessionStatus -> m CInt
 getSessionDownBandwidthQueue ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_status * hoPtr)->down_bandwidth_queue } |]
 
-getUpBandwidthBytesQueue :: SessionStatus -> IO CInt
+getUpBandwidthBytesQueue :: MonadIO m =>  SessionStatus -> m CInt
 getUpBandwidthBytesQueue ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_status * hoPtr)->up_bandwidth_bytes_queue } |]
 
-getDownBandwidthBytesQueue :: SessionStatus -> IO CInt
+getDownBandwidthBytesQueue :: MonadIO m =>  SessionStatus -> m CInt
 getDownBandwidthBytesQueue ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_status * hoPtr)->down_bandwidth_bytes_queue } |]
 
-getOptimisticUnchokeCounter :: SessionStatus -> IO CInt
+getOptimisticUnchokeCounter :: MonadIO m =>  SessionStatus -> m CInt
 getOptimisticUnchokeCounter ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_status * hoPtr)->optimistic_unchoke_counter } |]
 
-getUnchokeCounter :: SessionStatus -> IO CInt
+getUnchokeCounter :: MonadIO m =>  SessionStatus -> m CInt
 getUnchokeCounter ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_status * hoPtr)->unchoke_counter } |]
 
-getDiskWriteQueue :: SessionStatus -> IO CInt
+getDiskWriteQueue :: MonadIO m =>  SessionStatus -> m CInt
 getDiskWriteQueue ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_status * hoPtr)->disk_write_queue } |]
 
-getDiskReadQueue :: SessionStatus -> IO CInt
+getDiskReadQueue :: MonadIO m =>  SessionStatus -> m CInt
 getDiskReadQueue ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_status * hoPtr)->disk_read_queue } |]
 
-getDhtNodes :: SessionStatus -> IO CInt
+getDhtNodes :: MonadIO m =>  SessionStatus -> m CInt
 getDhtNodes ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_status * hoPtr)->dht_nodes } |]
 
-getDhtNodeCache :: SessionStatus -> IO CInt
+getDhtNodeCache :: MonadIO m =>  SessionStatus -> m CInt
 getDhtNodeCache ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_status * hoPtr)->dht_node_cache } |]
 
-getDhtTorrents :: SessionStatus -> IO CInt
+getDhtTorrents :: MonadIO m =>  SessionStatus -> m CInt
 getDhtTorrents ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_status * hoPtr)->dht_torrents } |]
 
-getDhtGlobalNodes :: SessionStatus -> IO C.CSize
+getDhtGlobalNodes :: MonadIO m =>  SessionStatus -> m C.CSize
 getDhtGlobalNodes ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| size_t { $(session_status * hoPtr)->dht_global_nodes } |]
 
 -- TODO:
 -- std::vector<dht_lookup> active_requests;
 -- std::vector<dht_routing_bucket> dht_routing_table;
 
-getDhtTotalAllocations :: SessionStatus -> IO CInt
+getDhtTotalAllocations :: MonadIO m =>  SessionStatus -> m CInt
 getDhtTotalAllocations ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_status * hoPtr)->dht_total_allocations } |]
 
 
-getUtpStats :: SessionStatus -> IO UtpStatus
+getUtpStats :: MonadIO m =>  SessionStatus -> m UtpStatus
 getUtpStats ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   fromPtr [CU.exp| utp_status * { new utp_status($(session_status * hoPtr)->utp_stats) } |]
 
-getPeerlistSize :: SessionStatus -> IO CInt
+getPeerlistSize :: MonadIO m =>  SessionStatus -> m CInt
 getPeerlistSize ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(session_status * hoPtr)->peerlist_size } |]
 
 -- Utp status
-getNumIdle :: UtpStatus -> IO CInt
+getNumIdle :: MonadIO m =>  UtpStatus -> m CInt
 getNumIdle ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(utp_status * hoPtr)->num_idle } |]
 
-getNumSynSent :: UtpStatus -> IO CInt
+getNumSynSent :: MonadIO m =>  UtpStatus -> m CInt
 getNumSynSent ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(utp_status * hoPtr)->num_syn_sent } |]
 
-getNumConnected :: UtpStatus -> IO CInt
+getNumConnected :: MonadIO m =>  UtpStatus -> m CInt
 getNumConnected ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(utp_status * hoPtr)->num_connected } |]
 
-getNumFinSent :: UtpStatus -> IO CInt
+getNumFinSent :: MonadIO m =>  UtpStatus -> m CInt
 getNumFinSent ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(utp_status * hoPtr)->num_fin_sent } |]
 
-getNumCloseWait :: UtpStatus -> IO CInt
+getNumCloseWait :: MonadIO m =>  UtpStatus -> m CInt
 getNumCloseWait ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(utp_status * hoPtr)->num_close_wait } |]
 
-getPacketLoss :: UtpStatus -> IO Word64
+getPacketLoss :: MonadIO m =>  UtpStatus -> m Word64
 getPacketLoss ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| uint64_t { $(utp_status * hoPtr)->packet_loss } |]
 
-getTimeout :: UtpStatus -> IO Word64
+getTimeout :: MonadIO m =>  UtpStatus -> m Word64
 getTimeout ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| uint64_t { $(utp_status * hoPtr)->timeout } |]
 
-getPacketsIn :: UtpStatus -> IO Word64
+getPacketsIn :: MonadIO m =>  UtpStatus -> m Word64
 getPacketsIn ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| uint64_t { $(utp_status * hoPtr)->packets_in } |]
 
-getPacketsOut :: UtpStatus -> IO Word64
+getPacketsOut :: MonadIO m =>  UtpStatus -> m Word64
 getPacketsOut ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| uint64_t { $(utp_status * hoPtr)->packets_out } |]
 
-getFastRetransmit :: UtpStatus -> IO Word64
+getFastRetransmit :: MonadIO m =>  UtpStatus -> m Word64
 getFastRetransmit ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| uint64_t { $(utp_status * hoPtr)->fast_retransmit } |]
 
-getPacketResend :: UtpStatus -> IO Word64
+getPacketResend :: MonadIO m =>  UtpStatus -> m Word64
 getPacketResend ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| uint64_t { $(utp_status * hoPtr)->packet_resend } |]
 
-getSamplesAboveTarget :: UtpStatus -> IO Word64
+getSamplesAboveTarget :: MonadIO m =>  UtpStatus -> m Word64
 getSamplesAboveTarget ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| uint64_t { $(utp_status * hoPtr)->samples_above_target } |]
 
-getSamplesBelowTarget :: UtpStatus -> IO Word64
+getSamplesBelowTarget :: MonadIO m =>  UtpStatus -> m Word64
 getSamplesBelowTarget ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| uint64_t { $(utp_status * hoPtr)->samples_below_target } |]
 
-getPayloadPktsIn :: UtpStatus -> IO Word64
+getPayloadPktsIn :: MonadIO m =>  UtpStatus -> m Word64
 getPayloadPktsIn ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| uint64_t { $(utp_status * hoPtr)->payload_pkts_in } |]
 
-getPayloadPktsOut :: UtpStatus -> IO Word64
+getPayloadPktsOut :: MonadIO m =>  UtpStatus -> m Word64
 getPayloadPktsOut ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| uint64_t { $(utp_status * hoPtr)->payload_pkts_out } |]
 
-getInvalidPktsIn :: UtpStatus -> IO Word64
+getInvalidPktsIn :: MonadIO m =>  UtpStatus -> m Word64
 getInvalidPktsIn ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| uint64_t { $(utp_status * hoPtr)->invalid_pkts_in } |]
 
-getRedundantPktsIn :: UtpStatus -> IO Word64
+getRedundantPktsIn :: MonadIO m =>  UtpStatus -> m Word64
 getRedundantPktsIn ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| uint64_t { $(utp_status * hoPtr)->redundant_pkts_in } |]
 

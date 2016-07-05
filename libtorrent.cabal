@@ -1,0 +1,189 @@
+name:                libtorrent
+version:             0.1.0.0
+synopsis:            Initial project template from stack
+description:         Please see README.md
+homepage:            https://github.com/eryx67/libtorrent#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Vladimir G. Sekisov
+maintainer:          eryx67@gmail.com
+copyright:           BSD
+category:            Web
+build-type:          Simple
+-- extra-source-files:
+cabal-version:       >=1.10
+
+library
+  hs-source-dirs:      src
+  ghc-options:         -Wall
+  exposed-modules:     Libtorrent
+                     , Libtorrent.Internal
+                     , Libtorrent.Inline
+                     , Libtorrent.Types.ArrayLike
+                     , Libtorrent.Types
+                     , Libtorrent.TH
+                     , Libtorrent.String
+                     , Libtorrent.Sha1Hash
+                     , Libtorrent.Bitfield
+                     , Libtorrent.ErrorCode
+                     , Libtorrent.Exceptions
+                     , Libtorrent.Exceptions.Internal
+                     , Libtorrent.Extensions
+                     , Libtorrent.FileStorage
+                     , Libtorrent.FileStorage.FileSlice
+                     , Libtorrent.Session
+                     , Libtorrent.Session.SessionStatus
+                     , Libtorrent.Session.AddTorrentParams
+                     , Libtorrent.Session.DhtSettings
+                     , Libtorrent.Session.PeSettings
+                     , Libtorrent.Session.ProxySettings
+                     , Libtorrent.Session.SessionSettings
+                     , Libtorrent.TorrentInfo
+                     , Libtorrent.TorrentInfo.AnnounceEntry
+                     , Libtorrent.TorrentHandle
+                     , Libtorrent.TorrentHandle.TorrentStatus
+                     , Libtorrent.PeerInfo
+                     , Libtorrent.PeerRequest
+                     , Libtorrent.TorrentHandle.PartialPieceInfo
+                     , Libtorrent.TorrentHandle.BlockInfo
+                     , Libtorrent.Alert
+                     , Libtorrent.Bencode
+                     , Libtorrent.CreateTorrent
+                     , Libtorrent.Rss.FeedItem
+                     , Libtorrent.Rss.FeedHandle
+                     , Libtorrent.Rss
+                     , Libtorrent.Vectors
+  c-sources: src/Libtorrent/String.cpp
+           , src/Libtorrent/Sha1Hash.cpp
+           , src/Libtorrent/Bitfield.cpp
+           , src/Libtorrent/ErrorCode.cpp
+           , src/Libtorrent/Exceptions/Internal.cpp
+           , src/Libtorrent/Extensions.cpp
+           , src/Libtorrent/FileStorage.cpp
+           , src/Libtorrent/FileStorage/FileSlice.cpp
+           , src/Libtorrent/Session.cpp
+           , src/Libtorrent/Session/AddTorrentParams.cpp
+           , src/Libtorrent/Session/DhtSettings.cpp
+           , src/Libtorrent/Session/PeSettings.cpp
+           , src/Libtorrent/Session/ProxySettings.cpp
+           , src/Libtorrent/Session/SessionSettings.cpp
+           , src/Libtorrent/Session/SessionStatus.cpp
+           , src/Libtorrent/TorrentInfo.cpp
+           , src/Libtorrent/TorrentInfo/AnnounceEntry.cpp
+           , src/Libtorrent/TorrentHandle.cpp
+           , src/Libtorrent/TorrentHandle/TorrentStatus.cpp
+           , src/Libtorrent/PeerInfo.cpp
+           , src/Libtorrent/PeerRequest.cpp
+           , src/Libtorrent/TorrentHandle/PartialPieceInfo.cpp
+           , src/Libtorrent/TorrentHandle/BlockInfo.cpp
+           , src/Libtorrent/Alert.cpp
+           , src/Libtorrent/Bencode.cpp
+           , src/Libtorrent/CreateTorrent.cpp
+           , src/Libtorrent/Rss/FeedItem.cpp
+           , src/Libtorrent/Rss/FeedHandle.cpp
+           , src/Libtorrent/Rss.cpp
+           , src/Libtorrent/Vectors.cpp
+           , src/Libtorrent.cpp
+  build-depends:       base >= 4.7 && < 5
+                     , containers >= 0.5.6.2
+                     , hoppy-generator
+                     , hoppy-runtime
+                     , inline-c
+                     , inline-c-cpp
+                     , text
+                     , exceptions
+                     , errors
+                     , transformers
+                     , bytestring
+                     , bitwise
+                     , template-haskell
+                     , vector
+                     , binary
+                     , cryptohash
+                     , random
+  default-language:    Haskell2010
+  extra-libraries: stdc++
+  pkgconfig-depends: libtorrent-rasterbar
+  include-dirs: include
+  cc-options: -Wall -O2 -std=c++11
+  ghc-options: -Wall -fwarn-incomplete-patterns -threaded -funbox-strict-fields -O2 -rtsopts
+               -ddump-splices
+
+executable libtorrent-client
+  hs-source-dirs:      examples
+  main-is:             Client.hs
+  ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
+  cc-options: -Wall -O2 -std=c++11
+  build-depends:       base
+                     , libtorrent
+                     , data-default
+                     , text
+                     , monad-logger
+                     , formatting
+                     , exceptions
+                     , bytestring
+                     , transformers
+                     , base16-bytestring
+                     , vector
+                     , ansi-terminal
+                     , async
+                     , directory
+                     , filepath
+                     , easy-file
+                     , lifted-base
+                     , monad-control
+                     , optparse-applicative
+  default-language:    Haskell2010
+
+executable libtorrent-rss-reader
+  hs-source-dirs:      examples
+  main-is:             RssReader.hs
+  ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
+  cc-options: -Wall -O2 -std=c++11
+  build-depends:       base
+                     , libtorrent
+                     , data-default
+                     , text
+                     , formatting
+                     , transformers
+                     , async
+                     , monad-control
+                     , monad-loops
+                     , optparse-applicative
+  default-language:    Haskell2010
+
+executable libtorrent-make-torrent
+  hs-source-dirs:      examples
+  main-is:             MakeTorrent.hs
+  ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
+  cc-options: -Wall -O2 -std=c++11
+  build-depends:       base
+                     , libtorrent
+                     , data-default
+                     , text
+                     , formatting
+                     , transformers
+                     , async
+                     , monad-control
+                     , optparse-applicative
+                     , directory
+                     , easy-file
+                     , filepath
+                     , bytestring
+  default-language:    Haskell2010
+
+test-suite libtorrent-test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Spec.hs
+  build-depends:       base
+                     , libtorrent
+                     , hspec
+  ghc-options:      -Wall -fwarn-incomplete-patterns -threaded -funbox-strict-fields -O2 -rtsopts
+  cc-options: -Wall -O2 -std=c++11
+  pkgconfig-depends: libtorrent-rasterbar
+  default-language:    Haskell2010
+
+source-repository head
+  type:     git
+  location: https://github.com/eryx67/libtorrent

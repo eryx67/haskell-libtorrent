@@ -16,6 +16,7 @@ module Libtorrent.TorrentHandle.PartialPieceInfo( PieceState(..)
                                                 , getPieceState
                                                 ) where
 
+import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Foreign.C.Types (CInt)
 import           Foreign.ForeignPtr ( ForeignPtr, withForeignPtr )
 import qualified Language.C.Inline as C
@@ -46,7 +47,7 @@ data PieceState =
   | PieceSlow
   | PieceMedium
   | PieceFast
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 newtype PartialPieceInfo = PartialPieceInfo { unPartialPieceInfo :: ForeignPtr (CType PartialPieceInfo)}
 
@@ -63,34 +64,34 @@ instance FromPtr PartialPieceInfo where
 instance WithPtr PartialPieceInfo where
   withPtr (PartialPieceInfo fptr) = withForeignPtr fptr
 
-getPieceIndex :: PartialPieceInfo -> IO CInt
+getPieceIndex :: MonadIO m =>  PartialPieceInfo -> m CInt
 getPieceIndex ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(partial_piece_info * hoPtr)->piece_index } |]
 
-getBlocksInPiece :: PartialPieceInfo -> IO CInt
+getBlocksInPiece :: MonadIO m =>  PartialPieceInfo -> m CInt
 getBlocksInPiece ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(partial_piece_info * hoPtr)->blocks_in_piece } |]
 
-getFinished :: PartialPieceInfo -> IO CInt
+getFinished :: MonadIO m =>  PartialPieceInfo -> m CInt
 getFinished ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(partial_piece_info * hoPtr)->finished } |]
 
-getWriting :: PartialPieceInfo -> IO CInt
+getWriting :: MonadIO m =>  PartialPieceInfo -> m CInt
 getWriting ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(partial_piece_info * hoPtr)->writing } |]
 
-getRequested :: PartialPieceInfo -> IO CInt
+getRequested :: MonadIO m =>  PartialPieceInfo -> m CInt
 getRequested ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(partial_piece_info * hoPtr)->requested } |]
 
-getBlocks :: PartialPieceInfo -> IO (StdVector BlockInfo)
+getBlocks :: MonadIO m =>  PartialPieceInfo -> m (StdVector BlockInfo)
 getBlocks ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   fromPtr [CU.block| VectorBlockInfo * {
               block_info *bs = $(partial_piece_info * hoPtr)->blocks;
               int bn = $(partial_piece_info * hoPtr)->blocks_in_piece;
@@ -98,7 +99,7 @@ getBlocks ho =
              }
           |]
 
-getPieceState :: PartialPieceInfo -> IO PieceState
+getPieceState :: MonadIO m =>  PartialPieceInfo -> m PieceState
 getPieceState ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toEnum . fromIntegral <$> [CU.exp| int { $(partial_piece_info * hoPtr)->piece_state } |]

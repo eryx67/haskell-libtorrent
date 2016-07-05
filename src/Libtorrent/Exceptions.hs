@@ -21,6 +21,8 @@ data LibtorrentException =
   | AddTorrentError !ErrorCode
   | TorrentHandleError !ErrorCode
   | BDecodeError !ErrorCode
+  | SessionError !ErrorCode
+  | CreateTorrentError !ErrorCode
   deriving Show
 
 instance Exception LibtorrentException

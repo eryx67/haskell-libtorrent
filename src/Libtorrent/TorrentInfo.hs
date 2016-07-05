@@ -44,6 +44,7 @@ module Libtorrent.TorrentInfo( TorrentInfo(..)
                              , isMerkleTorrent
                              ) where
 
+import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import           Data.Int (Int64)
@@ -99,9 +100,9 @@ instance WithPtr TorrentInfo where
   withPtr (TorrentInfo fptr) = withForeignPtr fptr
 
 -- | Can throw 'LibtorrentException'.
-newTorrentInfo :: Text -> IO TorrentInfo
+newTorrentInfo :: MonadIO m =>  Text -> m TorrentInfo
 newTorrentInfo fname =
-  TF.withCStringLen fname $ \(ptr, len) -> do
+  liftIO . TF.withCStringLen fname $ \(ptr, len) -> do
   let csize = fromIntegral len
   withErrorCode TorrentInfoError $ \ecPtr ->
     fromPtr [CU.block|
@@ -112,63 +113,63 @@ newTorrentInfo fname =
             |]
 
 -- | Can throw 'LibtorrentException'.
-torrentInfoFromBuffer :: ByteString -> IO TorrentInfo
+torrentInfoFromBuffer :: MonadIO m =>  ByteString -> m TorrentInfo
 torrentInfoFromBuffer bs =
-  withErrorCode TorrentInfoError $ \ePtr ->
+  liftIO . withErrorCode TorrentInfoError $ \ePtr ->
   fromPtr [CU.exp| torrent_info * { new torrent_info($bs-ptr:bs, $bs-len:bs, *$(error_code * ePtr)) } |]
 
-torrentInfoFromInfoHash :: Sha1Hash -> IO TorrentInfo
+torrentInfoFromInfoHash :: MonadIO m =>  Sha1Hash -> m TorrentInfo
 torrentInfoFromInfoHash ih =
-  withPtr ih $ \ihPtr ->
+  liftIO . withPtr ih $ \ihPtr ->
   fromPtr [CU.exp| torrent_info * { new torrent_info(*$(sha1_hash * ihPtr)) } |]
 
 
-files :: TorrentInfo -> IO FileStorage
+files :: MonadIO m =>  TorrentInfo -> m FileStorage
 files ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   fromPtr [CU.exp| file_storage * { new file_storage($(torrent_info * hoPtr)->files()) } |]
 
-origFiles :: TorrentInfo -> IO FileStorage
+origFiles :: MonadIO m =>  TorrentInfo -> m FileStorage
 origFiles ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   fromPtr [CU.exp| file_storage * { new file_storage($(torrent_info * hoPtr)->orig_files()) } |]
 
-torrentInfoRenameFile :: TorrentInfo -> C.CInt -> Text -> IO ()
+torrentInfoRenameFile :: MonadIO m =>  TorrentInfo -> C.CInt -> Text -> m ()
 torrentInfoRenameFile ho idx fname =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   fname' <- textToStdString fname
   withPtr fname' $ \fnamePtr ->
     [CU.exp| void { $(torrent_info * hoPtr)->rename_file($(int idx), *$(string * fnamePtr)) } |]
 
-remapFiles :: TorrentInfo -> FileStorage -> IO ()
+remapFiles :: MonadIO m =>  TorrentInfo -> FileStorage -> m ()
 remapFiles ho fs =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   withPtr fs $ \fsPtr ->
   [CU.exp| void { $(torrent_info * hoPtr)->remap_files(*$(file_storage * fsPtr)) } |]
 
-torrentInfoTrackers :: TorrentInfo -> IO (StdVector AnnounceEntry)
+torrentInfoTrackers :: MonadIO m =>  TorrentInfo -> m (StdVector AnnounceEntry)
 torrentInfoTrackers ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   fromPtr [CU.exp| VectorAnnounceEntry * { new VectorAnnounceEntry($(torrent_info * hoPtr)->trackers()) } |]
 
-torrentInfoAddTracker :: TorrentInfo -> Text -> (Maybe C.CInt) -> IO ()
+torrentInfoAddTracker :: MonadIO m =>  TorrentInfo -> Text -> (Maybe C.CInt) -> m ()
 torrentInfoAddTracker ho url tier =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let tier' = fromMaybe 0 tier
   surl <- textToStdString url
   withPtr surl $ \surlPtr ->
     [CU.exp| void { $(torrent_info * hoPtr)->add_tracker(*$(string * surlPtr), $(int tier')) } |]
 
 -- TODO: libtorrent 1.1
--- similarTorrents :: TorrentInfo -> IO (StdVector Sha1Hash)
+-- similarTorrents :: MonadIO m =>  TorrentInfo -> m (StdVector Sha1Hash)
 -- similarTorrents ho =
---   withPtr ho $ \hoPtr ->
+--   liftIO . withPtr ho $ \hoPtr ->
 --   fromPtr [CU.exp| VectorSha1Hash * { new VectorSha1Hash($(torrent_info * hoPtr)->similar_torrents()) } |]
 
 -- TODO: libtorrent 1.1
--- collections :: TorrentInfo -> IO [Text]
+-- collections :: MonadIO m =>  TorrentInfo -> m [Text]
 -- collections ho =
---   withPtr ho $ \hoPtr -> do
+--   liftIO . withPtr ho $ \hoPtr -> do
 --   cs :: (StdVector StdString) <- fromPtr [CU.exp| VectorString * { new VectorString($(torrent_info * hoPtr)->collections()) } |]
 --   toList cs >>= mapM stdStringToText
 
@@ -182,109 +183,109 @@ torrentInfoAddTracker ho url tier =
 --       , std::string const& extern_auth = std::string()
 --       , web_seed_entry::headers_t const& extra_headers = web_seed_entry::headers_t());
 
-totalSize :: TorrentInfo -> IO Int64
+totalSize :: MonadIO m =>  TorrentInfo -> m Int64
 totalSize ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int64_t { $(torrent_info * hoPtr)->total_size() } |]
 
-numPieces :: TorrentInfo -> IO C.CInt
+numPieces :: MonadIO m =>  TorrentInfo -> m C.CInt
 numPieces ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(torrent_info * hoPtr)->num_pieces() } |]
 
-pieceLength :: TorrentInfo -> IO C.CInt
+pieceLength :: MonadIO m =>  TorrentInfo -> m C.CInt
 pieceLength ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(torrent_info * hoPtr)->piece_length() } |]
 
-torrentInfoInfoHash :: TorrentInfo -> IO ByteString
+torrentInfoInfoHash :: MonadIO m =>  TorrentInfo -> m ByteString
 torrentInfoInfoHash ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   ih <- fromPtr [CU.exp| sha1_hash * { new sha1_hash($(torrent_info * hoPtr)->info_hash()) } |]
   sha1HashToByteString ih
 
-numFiles :: TorrentInfo -> IO C.CInt
+numFiles :: MonadIO m =>  TorrentInfo -> m C.CInt
 numFiles ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(torrent_info * hoPtr)->num_files() } |]
 
-mapBlock :: TorrentInfo -> C.CInt -> Int64 -> C.CInt -> IO (StdVector FileSlice)
+mapBlock :: MonadIO m =>  TorrentInfo -> C.CInt -> Int64 -> C.CInt -> m (StdVector FileSlice)
 mapBlock ho piece offset size =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   fromPtr [CU.exp| VectorFileSlice * { new VectorFileSlice($(torrent_info * hoPtr)->map_block($(int piece), $(int64_t offset), $(int size))) } |]
 
-mapFile :: TorrentInfo -> C.CInt -> Int64 -> C.CInt -> IO PeerRequest
+mapFile :: MonadIO m =>  TorrentInfo -> C.CInt -> Int64 -> C.CInt -> m PeerRequest
 mapFile ho file offset size =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   fromPtr [CU.exp| peer_request * { new peer_request($(torrent_info * hoPtr)->map_file($(int file), $(int64_t offset), $(int size))) } |]
 
 -- TODO: libtorrent 1.1
--- unload :: TorrentInfo -> IO ()
+-- unload :: MonadIO m =>  TorrentInfo -> m ()
 -- unload ho =
---   withPtr ho $ \hoPtr ->
+--   liftIO . withPtr ho $ \hoPtr ->
 --                  [CU.exp| void { $(torrent_info * hoPtr)->unload() } |]
 
 -- TODO: libtorrent 1.1
 
 -- -- | Can throw 'LibtorrentException'
--- load :: TorrentInfo -> ByteString ->IO ()
+-- load :: MonadIO m =>  TorrentInfo -> ByteString ->m ()
 -- load ho buf =
---   withPtr ho $ \hoPtr ->
+--   liftIO . withPtr ho $ \hoPtr ->
 --   withErrorCode TorrentInfoError $ \ePtr ->
 --   [CU.exp| void { $(torrent_info * hoPtr)->load($bs-ptr:buf, $bs-len:buf, *$(error_code * ePtr)) } |]
 
-sslCert :: TorrentInfo -> IO ByteString
+sslCert :: MonadIO m =>  TorrentInfo -> m ByteString
 sslCert ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   str <- fromPtr [CU.exp| string * { new std::string($(torrent_info * hoPtr)->ssl_cert()) } |]
   stdStringToByteString str
 
-torrentInfoIsValid :: TorrentInfo -> IO Bool
+torrentInfoIsValid :: MonadIO m =>  TorrentInfo -> m Bool
 torrentInfoIsValid ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toBool <$> [CU.exp| bool { $(torrent_info * hoPtr)->is_valid() } |]
 
-priv :: TorrentInfo -> IO Bool
+priv :: MonadIO m =>  TorrentInfo -> m Bool
 priv ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toBool <$> [CU.exp| bool { $(torrent_info * hoPtr)->priv() } |]
 
-isI2p :: TorrentInfo -> IO Bool
+isI2p :: MonadIO m =>  TorrentInfo -> m Bool
 isI2p ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toBool <$> [CU.exp| bool { $(torrent_info * hoPtr)->is_i2p() } |]
 
-hashForPiece :: TorrentInfo -> C.CInt -> IO ByteString
+hashForPiece :: MonadIO m =>  TorrentInfo -> C.CInt -> m ByteString
 hashForPiece ho idx =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   h <- fromPtr [CU.exp| sha1_hash * { new sha1_hash($(torrent_info * hoPtr)->hash_for_piece($(int idx))) } |]
   sha1HashToByteString h
 
-pieceSize :: TorrentInfo -> C.CInt -> IO C.CInt
+pieceSize :: MonadIO m =>  TorrentInfo -> C.CInt -> m C.CInt
 pieceSize ho idx =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_info * hoPtr)->piece_size($(int idx)) } |]
 
 -- TODO: libtorrent 1.1
--- isLoaded :: TorrentInfo -> IO Bool
+-- isLoaded :: MonadIO m =>  TorrentInfo -> m Bool
 -- isLoaded ho =
---   withPtr ho $ \hoPtr ->
+--   liftIO . withPtr ho $ \hoPtr ->
 --   toBool <$> [CU.exp| bool { $(torrent_info * hoPtr)->is_loaded() } |]
 
-merkleTree :: TorrentInfo -> IO (StdVector Sha1Hash)
+merkleTree :: MonadIO m =>  TorrentInfo -> m (StdVector Sha1Hash)
 merkleTree ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   fromPtr [CU.exp| VectorSha1Hash * { new VectorSha1Hash($(torrent_info * hoPtr)->merkle_tree()) } |]
 
-setMerkleTree :: TorrentInfo -> StdVector Sha1Hash -> IO ()
+setMerkleTree :: MonadIO m =>  TorrentInfo -> StdVector Sha1Hash -> m ()
 setMerkleTree ho mt =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   withPtr mt $ \mtPtr ->
   [CU.exp| void { $(torrent_info * hoPtr)->set_merkle_tree(*$(VectorSha1Hash * mtPtr)) } |]
 
-creationDate :: TorrentInfo -> IO (Maybe C.CTime)
+creationDate :: MonadIO m =>  TorrentInfo -> m (Maybe C.CTime)
 creationDate ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   res <- [CU.block| time_t {
              boost::optional<time_t> v = $(torrent_info * hoPtr)->creation_date();
              return (v ? *v : 0);
@@ -294,21 +295,21 @@ creationDate ho =
   then return Nothing
   else return $ Just res
 
-torrentInfoName :: TorrentInfo -> IO Text
+torrentInfoName :: MonadIO m =>  TorrentInfo -> m Text
 torrentInfoName ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   str <- fromPtr [CU.exp| string * { new std::string($(torrent_info * hoPtr)->name()) } |]
   stdStringToText str
 
-torrentInfoComment :: TorrentInfo -> IO Text
+torrentInfoComment :: MonadIO m =>  TorrentInfo -> m Text
 torrentInfoComment ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   str <- fromPtr [CU.exp| string * { new std::string($(torrent_info * hoPtr)->comment()) } |]
   stdStringToText str
   
-torrentInfoCreator :: TorrentInfo -> IO Text
+torrentInfoCreator :: MonadIO m =>  TorrentInfo -> m Text
 torrentInfoCreator ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   str <- fromPtr [CU.exp| string * { new std::string($(torrent_info * hoPtr)->creator()) } |]
   stdStringToText str
 
@@ -318,9 +319,9 @@ torrentInfoCreator ho =
 --    bool parse_info_section (bdecode_node const& e, error_code& ec, int flags);
 --    bdecode_node info (char const* key) const;
 
-torrentInfoMetadata :: TorrentInfo -> IO ByteString 
+torrentInfoMetadata :: MonadIO m =>  TorrentInfo -> m ByteString 
 torrentInfoMetadata ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   (len, buf) <- C.withPtrs_ $ \(lPtr, bufPtr) -> do
     [CU.exp| void {
       *$(char ** bufPtr) = $(torrent_info * hoPtr)->metadata().get();
@@ -329,9 +330,9 @@ torrentInfoMetadata ho =
     |]
   BS.packCStringLen (buf, fromIntegral len)
 
-isMerkleTorrent :: TorrentInfo -> IO Bool
+isMerkleTorrent :: MonadIO m =>  TorrentInfo -> m Bool
 isMerkleTorrent ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toBool <$> [CU.exp| bool { $(torrent_info * hoPtr)->is_merkle_torrent() } |]
 
 -- TODO:

@@ -16,5 +16,3 @@ objFromPtr_ :: (ForeignPtr c -> hask) -> IO (Ptr c) -> IO hask
 objFromPtr_ toHask fromC = mask_ $ do
     objPtr <- fromC
     toHask <$> newForeignPtr_ objPtr
-
-

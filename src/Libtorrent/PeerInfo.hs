@@ -104,6 +104,7 @@ module Libtorrent.PeerInfo (PeerFlags(..)
                            , setWriteState
                            ) where
 
+import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Data.Array.BitArray (BitArray)
 import           Data.Int (Int64)
 import           Data.Text (Text)
@@ -141,6 +142,7 @@ data PeerFlags =
   | LocalConnection
   | Handshake
   | Connecting
+  | Queued
   | OnParole
   | Seed
   | OptimisticUnchoke
@@ -153,7 +155,7 @@ data PeerFlags =
   | SslSocket
   | Rc4Encrypted
   | PlaintextEncrypted
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 data PeerSourceFlags =
   Tracker
@@ -162,13 +164,13 @@ data PeerSourceFlags =
   | Lsd
   | ResumeData
   | Incoming
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 data ConnectionType =
   StandardBittorrent
   | WebSeed
   | HttpSeed
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 
 data BwState =
@@ -176,7 +178,7 @@ data BwState =
   | BwLimit
   | BwNetwork
   | BwDisk
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 newtype PeerInfo = PeerInfo { unPeerInfo :: ForeignPtr (CType PeerInfo)}
 
@@ -193,463 +195,463 @@ instance FromPtr PeerInfo where
 instance WithPtr PeerInfo where
   withPtr (PeerInfo fptr) = withForeignPtr fptr
 
-getClient :: PeerInfo -> IO Text
+getClient :: MonadIO m => PeerInfo -> m Text
 getClient ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   res <- fromPtr [CU.exp| string * { new std::string($(peer_info * hoPtr)->client) } |]
   stdStringToText res
 
-setClient :: PeerInfo -> Text -> IO ()
+setClient :: MonadIO m => PeerInfo -> Text -> m ()
 setClient ho val = do
-  TF.withCStringLen val $ \(cstr, len) -> do
+  liftIO . TF.withCStringLen val $ \(cstr, len) -> do
     let clen = fromIntegral len
-    withPtr ho $ \hoPtr ->
+    liftIO . withPtr ho $ \hoPtr ->
       [CU.exp| void { $(peer_info * hoPtr)->client = std::string($(const char * cstr), $(size_t clen))} |]
 
-getPeerInfoPieces :: PeerInfo -> IO (BitArray Int)
+getPeerInfoPieces :: MonadIO m => PeerInfo -> m (BitArray Int)
 getPeerInfoPieces ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   bf <- fromPtr [CU.exp| bitfield * { new bitfield($(peer_info * hoPtr)->pieces) } |]
   bitfieldToBitArray bf
 
-setPeerInfoPieces :: PeerInfo -> (BitArray Int) -> IO ()
-setPeerInfoPieces ho ba = do
+setPeerInfoPieces :: MonadIO m => PeerInfo -> (BitArray Int) -> m ()
+setPeerInfoPieces ho ba = liftIO $ do
   bf <- bitArrayToBitfield ba
   withPtr bf $ \bfPtr ->
     withPtr ho $ \hoPtr ->
     [CU.exp| void { $(peer_info * hoPtr)->pieces = bitfield(*$(bitfield * bfPtr))} |]
 
 
-getPeerInfoTotalDownload :: PeerInfo -> IO Int64
+getPeerInfoTotalDownload :: MonadIO m => PeerInfo -> m Int64
 getPeerInfoTotalDownload ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int64_t { $(peer_info * hoPtr)->total_download } |]
 
-setPeerInfoTotalDownload :: PeerInfo -> Int64 -> IO ()
+setPeerInfoTotalDownload :: MonadIO m => PeerInfo -> Int64 -> m ()
 setPeerInfoTotalDownload ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->total_download = $(int64_t val)} |]
 
-getPeerInfoTotalUpload :: PeerInfo -> IO Int64
+getPeerInfoTotalUpload :: MonadIO m => PeerInfo -> m Int64
 getPeerInfoTotalUpload ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int64_t { $(peer_info * hoPtr)->total_upload } |]
 
-setPeerInfoTotalUpload :: PeerInfo -> Int64 -> IO ()
+setPeerInfoTotalUpload :: MonadIO m => PeerInfo -> Int64 -> m ()
 setPeerInfoTotalUpload ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->total_upload = $(int64_t val)} |]
 
-getLastRequest :: PeerInfo -> IO Word64
+getLastRequest :: MonadIO m => PeerInfo -> m Word64
 getLastRequest ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| uint64_t { $(peer_info * hoPtr)->last_request.diff } |]
 
-setLastRequest :: PeerInfo -> Word64 -> IO ()
+setLastRequest :: MonadIO m => PeerInfo -> Word64 -> m ()
 setLastRequest ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->last_request = time_duration($(uint64_t val))} |]
 
-getLastActive :: PeerInfo -> IO Word64
+getLastActive :: MonadIO m => PeerInfo -> m Word64
 getLastActive ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| uint64_t { $(peer_info * hoPtr)->last_active.diff } |]
 
-setLastActive :: PeerInfo -> Word64 -> IO ()
+setLastActive :: MonadIO m => PeerInfo -> Word64 -> m ()
 setLastActive ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->last_active = time_duration($(uint64_t val))} |]
 
-getDownloadQueueTime :: PeerInfo -> IO Word64
+getDownloadQueueTime :: MonadIO m => PeerInfo -> m Word64
 getDownloadQueueTime ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| uint64_t { $(peer_info * hoPtr)->download_queue_time.diff } |]
 
-setDownloadQueueTime :: PeerInfo -> Word64 -> IO ()
+setDownloadQueueTime :: MonadIO m => PeerInfo -> Word64 -> m ()
 setDownloadQueueTime ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(peer_info * hoPtr)->download_queue_time = time_duration($(uint64_t val))} |]
 
-getPeerInfoFlags :: PeerInfo -> IO (BitFlags PeerFlags)
+getPeerInfoFlags :: MonadIO m => PeerInfo -> m (BitFlags PeerFlags)
 getPeerInfoFlags ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toEnum . fromIntegral <$> [CU.exp| int32_t{ $(peer_info * hoPtr)->flags } |]
 
-setPeerInfoFlags :: PeerInfo -> BitFlags PeerFlags -> IO ()
+setPeerInfoFlags :: MonadIO m => PeerInfo -> BitFlags PeerFlags -> m ()
 setPeerInfoFlags ho flags = do
   let val = fromIntegral $ fromEnum flags
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
     [CU.exp| void { $(peer_info * hoPtr)->flags = $(int32_t val)} |]
 
-getPeerInfoSource :: PeerInfo -> IO (BitFlags PeerSourceFlags)
+getPeerInfoSource :: MonadIO m => PeerInfo -> m (BitFlags PeerSourceFlags)
 getPeerInfoSource ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toEnum . fromIntegral <$> [CU.exp| int32_t { $(peer_info * hoPtr)->source } |]
 
-setPeerInfoSource :: PeerInfo -> BitFlags PeerSourceFlags -> IO ()
+setPeerInfoSource :: MonadIO m => PeerInfo -> BitFlags PeerSourceFlags -> m ()
 setPeerInfoSource ho flags = do
   let val = fromIntegral $ fromEnum flags
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
     [CU.exp| void { $(peer_info * hoPtr)->source = $(int32_t val)} |]
 
-getUpSpeed :: PeerInfo -> IO CInt
+getUpSpeed :: MonadIO m => PeerInfo -> m CInt
 getUpSpeed ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->up_speed } |]
 
-setUpSpeed :: PeerInfo -> CInt -> IO ()
+setUpSpeed :: MonadIO m => PeerInfo -> CInt -> m ()
 setUpSpeed ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->up_speed = $(int val)} |]
 
 
-getDownSpeed :: PeerInfo -> IO CInt
+getDownSpeed :: MonadIO m => PeerInfo -> m CInt
 getDownSpeed ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->down_speed } |]
 
-setDownSpeed :: PeerInfo -> CInt -> IO ()
+setDownSpeed :: MonadIO m => PeerInfo -> CInt -> m ()
 setDownSpeed ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->down_speed = $(int val)} |]
 
 
-getPayloadUpSpeed :: PeerInfo -> IO CInt
+getPayloadUpSpeed :: MonadIO m => PeerInfo -> m CInt
 getPayloadUpSpeed ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->payload_up_speed } |]
 
-setPayloadUpSpeed :: PeerInfo -> CInt -> IO ()
+setPayloadUpSpeed :: MonadIO m => PeerInfo -> CInt -> m ()
 setPayloadUpSpeed ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->payload_up_speed = $(int val)} |]
 
 
-getPayloadDownSpeed :: PeerInfo -> IO CInt
+getPayloadDownSpeed :: MonadIO m => PeerInfo -> m CInt
 getPayloadDownSpeed ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->payload_down_speed } |]
 
-setPayloadDownSpeed :: PeerInfo -> CInt -> IO ()
+setPayloadDownSpeed :: MonadIO m => PeerInfo -> CInt -> m ()
 setPayloadDownSpeed ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->payload_down_speed = $(int val)} |]
 
-getPid :: PeerInfo -> IO Sha1Hash
+getPid :: MonadIO m => PeerInfo -> m Sha1Hash
 getPid ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   fromPtr [CU.exp| sha1_hash * { new sha1_hash($(peer_info * hoPtr)->pid) } |]
 
-setPid :: PeerInfo -> Sha1Hash -> IO ()
+setPid :: MonadIO m => PeerInfo -> Sha1Hash -> m ()
 setPid ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   withPtr val $ \valPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->pid = sha1_hash(*$(sha1_hash * valPtr)) } |]
 
-getQueueBytes :: PeerInfo -> IO CInt
+getQueueBytes :: MonadIO m => PeerInfo -> m CInt
 getQueueBytes ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(peer_info * hoPtr)->queue_bytes } |]
 
-setQueueBytes :: PeerInfo -> CInt -> IO ()
+setQueueBytes :: MonadIO m => PeerInfo -> CInt -> m ()
 setQueueBytes ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(peer_info * hoPtr)->queue_bytes = $(int val)} |]
 
-getPeerInfoRequestTimeout :: PeerInfo -> IO CInt
+getPeerInfoRequestTimeout :: MonadIO m => PeerInfo -> m CInt
 getPeerInfoRequestTimeout ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->request_timeout } |]
 
-setPeerInfoRequestTimeout :: PeerInfo -> CInt -> IO ()
+setPeerInfoRequestTimeout :: MonadIO m => PeerInfo -> CInt -> m ()
 setPeerInfoRequestTimeout ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->request_timeout = $(int val)} |]
 
-getSendBufferSize :: PeerInfo -> IO CInt
+getSendBufferSize :: MonadIO m => PeerInfo -> m CInt
 getSendBufferSize ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->send_buffer_size } |]
 
-setSendBufferSize :: PeerInfo -> CInt -> IO ()
+setSendBufferSize :: MonadIO m => PeerInfo -> CInt -> m ()
 setSendBufferSize ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->send_buffer_size = $(int val)} |]
 
-getUsedSendBuffer :: PeerInfo -> IO CInt
+getUsedSendBuffer :: MonadIO m => PeerInfo -> m CInt
 getUsedSendBuffer ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->used_send_buffer } |]
 
-setUsedSendBuffer :: PeerInfo -> CInt -> IO ()
+setUsedSendBuffer :: MonadIO m => PeerInfo -> CInt -> m ()
 setUsedSendBuffer ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->used_send_buffer = $(int val)} |]
 
-getReceiveBufferSize :: PeerInfo -> IO CInt
+getReceiveBufferSize :: MonadIO m => PeerInfo -> m CInt
 getReceiveBufferSize ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->receive_buffer_size } |]
 
-setReceiveBufferSize :: PeerInfo -> CInt -> IO ()
+setReceiveBufferSize :: MonadIO m => PeerInfo -> CInt -> m ()
 setReceiveBufferSize ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->receive_buffer_size = $(int val)} |]
 
-getUsedReceiveBuffer :: PeerInfo -> IO CInt
+getUsedReceiveBuffer :: MonadIO m => PeerInfo -> m CInt
 getUsedReceiveBuffer ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->used_receive_buffer } |]
 
-setUsedReceiveBuffer :: PeerInfo -> CInt -> IO ()
+setUsedReceiveBuffer :: MonadIO m => PeerInfo -> CInt -> m ()
 setUsedReceiveBuffer ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->used_receive_buffer = $(int val)} |]
 
-getNumHashfails :: PeerInfo -> IO CInt
+getNumHashfails :: MonadIO m => PeerInfo -> m CInt
 getNumHashfails ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->num_hashfails } |]
 
-setNumHashfails :: PeerInfo -> CInt -> IO ()
+setNumHashfails :: MonadIO m => PeerInfo -> CInt -> m ()
 setNumHashfails ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->num_hashfails = $(int val)} |]
 
-getDownloadQueueLength :: PeerInfo -> IO CInt
+getDownloadQueueLength :: MonadIO m => PeerInfo -> m CInt
 getDownloadQueueLength ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->download_queue_length } |]
 
-setDownloadQueueLength :: PeerInfo -> CInt -> IO ()
+setDownloadQueueLength :: MonadIO m => PeerInfo -> CInt -> m ()
 setDownloadQueueLength ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->download_queue_length = $(int val)} |]
 
-getTimedOutRequests :: PeerInfo -> IO CInt
+getTimedOutRequests :: MonadIO m => PeerInfo -> m CInt
 getTimedOutRequests ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->timed_out_requests } |]
 
-setTimedOutRequests :: PeerInfo -> CInt -> IO ()
+setTimedOutRequests :: MonadIO m => PeerInfo -> CInt -> m ()
 setTimedOutRequests ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->timed_out_requests = $(int val)} |]
 
-getBusyRequests :: PeerInfo -> IO CInt
+getBusyRequests :: MonadIO m => PeerInfo -> m CInt
 getBusyRequests ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->busy_requests } |]
 
-setBusyRequests :: PeerInfo -> CInt -> IO ()
+setBusyRequests :: MonadIO m => PeerInfo -> CInt -> m ()
 setBusyRequests ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->busy_requests = $(int val)} |]
 
-getRequestsInBuffer :: PeerInfo -> IO CInt
+getRequestsInBuffer :: MonadIO m => PeerInfo -> m CInt
 getRequestsInBuffer ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->requests_in_buffer } |]
 
-setRequestsInBuffer :: PeerInfo -> CInt -> IO ()
+setRequestsInBuffer :: MonadIO m => PeerInfo -> CInt -> m ()
 setRequestsInBuffer ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->requests_in_buffer = $(int val)} |]
 
-getTargetDlQueueLength :: PeerInfo -> IO CInt
+getTargetDlQueueLength :: MonadIO m => PeerInfo -> m CInt
 getTargetDlQueueLength ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->target_dl_queue_length } |]
 
-setTargetDlQueueLength :: PeerInfo -> CInt -> IO ()
+setTargetDlQueueLength :: MonadIO m => PeerInfo -> CInt -> m ()
 setTargetDlQueueLength ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->target_dl_queue_length = $(int val)} |]
 
-getUploadQueueLength :: PeerInfo -> IO CInt
+getUploadQueueLength :: MonadIO m => PeerInfo -> m CInt
 getUploadQueueLength ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->upload_queue_length } |]
 
-setUploadQueueLength :: PeerInfo -> CInt -> IO ()
+setUploadQueueLength :: MonadIO m => PeerInfo -> CInt -> m ()
 setUploadQueueLength ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->upload_queue_length = $(int val)} |]
 
-getFailcount :: PeerInfo -> IO CInt
+getFailcount :: MonadIO m => PeerInfo -> m CInt
 getFailcount ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->failcount } |]
 
-setFailcount :: PeerInfo -> CInt -> IO ()
+setFailcount :: MonadIO m => PeerInfo -> CInt -> m ()
 setFailcount ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->failcount = $(int val)} |]
 
-getDownloadingPieceIndex :: PeerInfo -> IO CInt
+getDownloadingPieceIndex :: MonadIO m => PeerInfo -> m CInt
 getDownloadingPieceIndex ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->downloading_piece_index } |]
 
-setDownloadingPieceIndex :: PeerInfo -> CInt -> IO ()
+setDownloadingPieceIndex :: MonadIO m => PeerInfo -> CInt -> m ()
 setDownloadingPieceIndex ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->downloading_piece_index = $(int val)} |]
 
-getDownloadingBlockIndex :: PeerInfo -> IO CInt
+getDownloadingBlockIndex :: MonadIO m => PeerInfo -> m CInt
 getDownloadingBlockIndex ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->downloading_block_index } |]
 
-setDownloadingBlockIndex :: PeerInfo -> CInt -> IO ()
+setDownloadingBlockIndex :: MonadIO m => PeerInfo -> CInt -> m ()
 setDownloadingBlockIndex ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->downloading_block_index = $(int val)} |]
 
-getDownloadingProgress :: PeerInfo -> IO CInt
+getDownloadingProgress :: MonadIO m => PeerInfo -> m CInt
 getDownloadingProgress ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->downloading_progress } |]
 
-setDownloadingProgress :: PeerInfo -> CInt -> IO ()
+setDownloadingProgress :: MonadIO m => PeerInfo -> CInt -> m ()
 setDownloadingProgress ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->downloading_progress = $(int val)} |]
 
-getDownloadingTotal :: PeerInfo -> IO CInt
+getDownloadingTotal :: MonadIO m => PeerInfo -> m CInt
 getDownloadingTotal ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->downloading_total } |]
 
-setDownloadingTotal :: PeerInfo -> CInt -> IO ()
+setDownloadingTotal :: MonadIO m => PeerInfo -> CInt -> m ()
 setDownloadingTotal ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->downloading_total = $(int val)} |]
 
-getConnectionType :: PeerInfo -> IO ConnectionType
+getConnectionType :: MonadIO m => PeerInfo -> m ConnectionType
 getConnectionType ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toEnum . fromIntegral <$> [CU.exp| int { $(peer_info * hoPtr)->connection_type } |]
 
-setConnectionType :: PeerInfo -> ConnectionType -> IO ()
+setConnectionType :: MonadIO m => PeerInfo -> ConnectionType -> m ()
 setConnectionType ho flag = do
   let val = fromIntegral $ fromEnum flag
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
     [CU.exp| void { $(peer_info * hoPtr)->connection_type = $(int val)} |]
 
-getRemoteDlRate :: PeerInfo -> IO CInt
+getRemoteDlRate :: MonadIO m => PeerInfo -> m CInt
 getRemoteDlRate ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->remote_dl_rate } |]
 
-setRemoteDlRate :: PeerInfo -> CInt -> IO ()
+setRemoteDlRate :: MonadIO m => PeerInfo -> CInt -> m ()
 setRemoteDlRate ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->remote_dl_rate = $(int val)} |]
 
-getPendingDiskBytes :: PeerInfo -> IO CInt
+getPendingDiskBytes :: MonadIO m => PeerInfo -> m CInt
 getPendingDiskBytes ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->pending_disk_bytes } |]
 
-setPendingDiskBytes :: PeerInfo -> CInt -> IO ()
+setPendingDiskBytes :: MonadIO m => PeerInfo -> CInt -> m ()
 setPendingDiskBytes ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->pending_disk_bytes = $(int val)} |]
 
--- getPendingDiskReadBytes :: PeerInfo -> IO CInt
+-- getPendingDiskReadBytes :: MonadIO m => PeerInfo -> m CInt
 -- getPendingDiskReadBytes ho =
---   withPtr ho $ \hoPtr ->
+--   liftIO . withPtr ho $ \hoPtr ->
 --   [CU.exp| int { $(peer_info * hoPtr)->pending_disk_read_bytes } |]
 
--- setPendingDiskReadBytes :: PeerInfo -> CInt -> IO ()
+-- setPendingDiskReadBytes :: MonadIO m => PeerInfo -> CInt -> m ()
 -- setPendingDiskReadBytes ho val =
---   withPtr ho $ \hoPtr ->
+--   liftIO . withPtr ho $ \hoPtr ->
 --   [CU.exp| void { $(peer_info * hoPtr)->pending_disk_read_bytes = $(int val)} |]
 
-getSendQuota :: PeerInfo -> IO CInt
+getSendQuota :: MonadIO m => PeerInfo -> m CInt
 getSendQuota ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->send_quota } |]
 
-setSendQuota :: PeerInfo -> CInt -> IO ()
+setSendQuota :: MonadIO m => PeerInfo -> CInt -> m ()
 setSendQuota ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->send_quota = $(int val)} |]
 
-getReceiveQuota :: PeerInfo -> IO CInt
+getReceiveQuota :: MonadIO m => PeerInfo -> m CInt
 getReceiveQuota ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->receive_quota } |]
 
-setReceiveQuota :: PeerInfo -> CInt -> IO ()
+setReceiveQuota :: MonadIO m => PeerInfo -> CInt -> m ()
 setReceiveQuota ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->receive_quota = $(int val)} |]
 
-getRtt :: PeerInfo -> IO CInt
+getRtt :: MonadIO m => PeerInfo -> m CInt
 getRtt ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->rtt } |]
 
-setRtt :: PeerInfo -> CInt -> IO ()
+setRtt :: MonadIO m => PeerInfo -> CInt -> m ()
 setRtt ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->rtt = $(int val)} |]
 
-getPeerInfoNumPieces :: PeerInfo -> IO CInt
+getPeerInfoNumPieces :: MonadIO m => PeerInfo -> m CInt
 getPeerInfoNumPieces ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->num_pieces } |]
 
-setPeerInfoNumPieces :: PeerInfo -> CInt -> IO ()
+setPeerInfoNumPieces :: MonadIO m => PeerInfo -> CInt -> m ()
 setPeerInfoNumPieces ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->num_pieces = $(int val)} |]
 
-getDownloadRatePeak :: PeerInfo -> IO CInt
+getDownloadRatePeak :: MonadIO m => PeerInfo -> m CInt
 getDownloadRatePeak ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->download_rate_peak } |]
 
-setDownloadRatePeak :: PeerInfo -> CInt -> IO ()
+setDownloadRatePeak :: MonadIO m => PeerInfo -> CInt -> m ()
 setDownloadRatePeak ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->download_rate_peak = $(int val)} |]
 
-getUploadRatePeak :: PeerInfo -> IO CInt
+getUploadRatePeak :: MonadIO m => PeerInfo -> m CInt
 getUploadRatePeak ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->upload_rate_peak } |]
 
-setUploadRatePeak :: PeerInfo -> CInt -> IO ()
+setUploadRatePeak :: MonadIO m => PeerInfo -> CInt -> m ()
 setUploadRatePeak ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->upload_rate_peak = $(int val)} |]
 
-getPeerInfoProgressPpm :: PeerInfo -> IO CInt
+getPeerInfoProgressPpm :: MonadIO m => PeerInfo -> m CInt
 getPeerInfoProgressPpm ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->progress_ppm } |]
 
-setPeerInfoProgressPpm :: PeerInfo -> CInt -> IO ()
+setPeerInfoProgressPpm :: MonadIO m => PeerInfo -> CInt -> m ()
 setPeerInfoProgressPpm ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->progress_ppm = $(int val)} |]
 
-getEstimatedReciprocationRate :: PeerInfo -> IO CInt
+getEstimatedReciprocationRate :: MonadIO m => PeerInfo -> m CInt
 getEstimatedReciprocationRate ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(peer_info * hoPtr)->estimated_reciprocation_rate } |]
 
-setEstimatedReciprocationRate :: PeerInfo -> CInt -> IO ()
+setEstimatedReciprocationRate :: MonadIO m => PeerInfo -> CInt -> m ()
 setEstimatedReciprocationRate ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(peer_info * hoPtr)->estimated_reciprocation_rate = $(int val)} |]
 
-getIp :: PeerInfo -> IO (Text, C.CShort)
+getIp :: MonadIO m => PeerInfo -> m (Text, C.CShort)
 getIp ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   addr <- fromPtr [CU.block| string * {
                       tcp::endpoint ep = $(peer_info * hoPtr)->ip;
                       return new std::string(ep.address().to_string());
@@ -663,9 +665,9 @@ getIp ho =
   ( , port) <$> stdStringToText addr
 
 
-getLocalEndpoint :: PeerInfo -> IO (Text, C.CShort)
+getLocalEndpoint :: MonadIO m => PeerInfo -> m (Text, C.CShort)
 getLocalEndpoint ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   addr <- fromPtr [CU.block| string * {
                       tcp::endpoint ep = $(peer_info * hoPtr)->local_endpoint;
                       return new std::string(ep.address().to_string());
@@ -678,25 +680,25 @@ getLocalEndpoint ho =
                   |]
   ( , port) <$> stdStringToText addr
 
-getReadState :: PeerInfo -> IO (BitFlags BwState)
+getReadState :: MonadIO m => PeerInfo -> m (BitFlags BwState)
 getReadState ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toEnum . fromIntegral <$> [CU.exp| char { $(peer_info * hoPtr)->read_state } |]
 
-setReadState :: PeerInfo -> BitFlags BwState -> IO ()
+setReadState :: MonadIO m => PeerInfo -> BitFlags BwState -> m ()
 setReadState ho flags = do
   let val = fromIntegral $ fromEnum flags
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
     [CU.exp| void { $(peer_info * hoPtr)->read_state = $(char val)} |]
 
-getWriteState :: PeerInfo -> IO (BitFlags BwState)
+getWriteState :: MonadIO m => PeerInfo -> m (BitFlags BwState)
 getWriteState ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toEnum . fromIntegral <$> [CU.exp| char { $(peer_info * hoPtr)->write_state } |]
 
-setWriteState :: PeerInfo -> BitFlags BwState -> IO ()
+setWriteState :: MonadIO m => PeerInfo -> BitFlags BwState -> m ()
 setWriteState ho flags = do
   let val = fromIntegral $ fromEnum flags
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
     [CU.exp| void { $(peer_info * hoPtr)->write_state = $(char val)} |]
 

@@ -6,6 +6,7 @@
 {-# LANGUAGE DefaultSignatures    #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE GADTs                #-}
+{-# LANGUAGE RankNTypes           #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | <http://www.libtorrent.org/reference-Core.html#alert alert> structure for "Libtorrent"
 
@@ -26,81 +27,81 @@ module Libtorrent.Alert (IsAlert(..)
                         , RssState(..)
                         , IncomingSocketType(..)
                         , DhtOperation(..)
-                        , TorrentAlert
-                        , PeerAlert
-                        , TrackerAlert
-                        , TorrentAddedAlert
-                        , TorrentRemovedAlert
-                        , ReadPieceAlert
-                        , FileCompletedAlert
-                        , FileRenamedAlert
-                        , FileRenameFailedAlert
-                        , PerformanceAlert
-                        , StateChangedAlert
-                        , TrackerErrorAlert
-                        , TrackerWarningAlert
-                        , ScrapeReplyAlert
-                        , ScrapeFailedAlert
-                        , TrackerReplyAlert
-                        , DhtReplyAlert
-                        , TrackerAnnounceAlert
-                        , HashFailedAlert
-                        , PeerBanAlert
-                        , PeerUnsnubbedAlert
-                        , PeerSnubbedAlert
-                        , PeerErrorAlert
-                        , PeerConnectAlert
-                        , PeerDisconnectedAlert
-                        , InvalidRequestAlert
-                        , TorrentFinishedAlert
-                        , PieceFinishedAlert
-                        , RequestDroppedAlert
-                        , BlockTimeoutAlert
-                        , BlockFinishedAlert
-                        , BlockDownloadingAlert
-                        , UnwantedBlockAlert
-                        , StorageMovedAlert
-                        , StorageMovedFailedAlert
-                        , TorrentDeletedAlert
-                        , TorrentDeleteFailedAlert
-                        , SaveResumeDataAlert
-                        , SaveResumeDataFailedAlert
-                        , TorrentPausedAlert
-                        , TorrentResumedAlert
-                        , TorrentCheckedAlert
-                        , UrlSeedAlert
-                        , FileErrorAlert
-                        , MetadataFailedAlert
-                        , MetadataReceivedAlert
-                        , UdpErrorAlert
-                        , ExternalIpAlert
-                        , ListenFailedAlert
-                        , ListenSucceededAlert
-                        , PortmapErrorAlert
-                        , PortmapAlert
-                        , PortmapLogAlert
-                        , FastresumeRejectedAlert
-                        , PeerBlockedAlert
-                        , DhtAnnounceAlert
-                        , DhtGetPeersAlert
-                        , StatsAlert
-                        , CacheFlushedAlert
-                        , AnonymousModeAlert
-                        , LsdPeerAlert
-                        , TrackeridAlert
-                        , DhtBootstrapAlert
-                        , TorrentErrorAlert
-                        , TorrentNeedCertAlert
-                        , IncomingConnectionAlert
-                        , AddTorrentAlert
-                        , StateUpdateAlert
-                        , DhtErrorAlert
-                        , DhtImmutableItemAlert
-                        , DhtMutableItemAlert
-                        , DhtPutAlert
-                        , RssAlert
-                        , RssItemAlert
-                        , I2pAlert
+                        , TorrentAlert(..)
+                        , PeerAlert(..)
+                        , TrackerAlert(..)
+                        , TorrentAddedAlert(..)
+                        , TorrentRemovedAlert(..)
+                        , ReadPieceAlert(..)
+                        , FileCompletedAlert(..)
+                        , FileRenamedAlert(..)
+                        , FileRenameFailedAlert(..)
+                        , PerformanceAlert(..)
+                        , StateChangedAlert(..)
+                        , TrackerErrorAlert(..)
+                        , TrackerWarningAlert(..)
+                        , ScrapeReplyAlert(..)
+                        , ScrapeFailedAlert(..)
+                        , TrackerReplyAlert(..)
+                        , DhtReplyAlert(..)
+                        , TrackerAnnounceAlert(..)
+                        , HashFailedAlert(..)
+                        , PeerBanAlert(..)
+                        , PeerUnsnubbedAlert(..)
+                        , PeerSnubbedAlert(..)
+                        , PeerErrorAlert(..)
+                        , PeerConnectAlert(..)
+                        , PeerDisconnectedAlert(..)
+                        , InvalidRequestAlert(..)
+                        , TorrentFinishedAlert(..)
+                        , PieceFinishedAlert(..)
+                        , RequestDroppedAlert(..)
+                        , BlockTimeoutAlert(..)
+                        , BlockFinishedAlert(..)
+                        , BlockDownloadingAlert(..)
+                        , UnwantedBlockAlert(..)
+                        , StorageMovedAlert(..)
+                        , StorageMovedFailedAlert(..)
+                        , TorrentDeletedAlert(..)
+                        , TorrentDeleteFailedAlert(..)
+                        , SaveResumeDataAlert(..)
+                        , SaveResumeDataFailedAlert(..)
+                        , TorrentPausedAlert(..)
+                        , TorrentResumedAlert(..)
+                        , TorrentCheckedAlert(..)
+                        , UrlSeedAlert(..)
+                        , FileErrorAlert(..)
+                        , MetadataFailedAlert(..)
+                        , MetadataReceivedAlert(..)
+                        , UdpErrorAlert(..)
+                        , ExternalIpAlert(..)
+                        , ListenFailedAlert(..)
+                        , ListenSucceededAlert(..)
+                        , PortmapErrorAlert(..)
+                        , PortmapAlert(..)
+                        , PortmapLogAlert(..)
+                        , FastresumeRejectedAlert(..)
+                        , PeerBlockedAlert(..)
+                        , DhtAnnounceAlert(..)
+                        , DhtGetPeersAlert(..)
+                        , StatsAlert(..)
+                        , CacheFlushedAlert(..)
+                        , AnonymousModeAlert(..)
+                        , LsdPeerAlert(..)
+                        , TrackeridAlert(..)
+                        , DhtBootstrapAlert(..)
+                        , TorrentErrorAlert(..)
+                        , TorrentNeedCertAlert(..)
+                        , IncomingConnectionAlert(..)
+                        , AddTorrentAlert(..)
+                        , StateUpdateAlert(..)
+                        , DhtErrorAlert(..)
+                        , DhtImmutableItemAlert(..)
+                        , DhtMutableItemAlert(..)
+                        , DhtPutAlert(..)
+                        , RssAlert(..)
+                        , RssItemAlert(..)
+                        , I2pAlert(..)
                         , castAlert
                         , newAlertDeque
                         , alertTimestamp
@@ -221,6 +222,7 @@ module Libtorrent.Alert (IsAlert(..)
                         , i2pAlertError
                         ) where
 
+import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import           Data.Text (Text)
@@ -297,7 +299,7 @@ data AlertCategory =
   | PortMappingLogNotification
   | PickerLogNotification
   | AllCategories
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 newtype SubAlert a = SubAlert { unSubAlert :: a }
 
@@ -335,8 +337,8 @@ class IsTorrentAlert a => IsTrackerAlert a where
   asTrackerAlert a action =
     withPtr (SubAlert . fromAlert $ toAlert a :: SubAlert TrackerAlert) action
 
-data AlertHandler a where
-  AlertHandler :: IsAlert b => (b -> IO a) -> AlertHandler a
+data AlertHandler m a where
+  AlertHandler :: (MonadIO m, IsAlert b) => (b -> m a) -> AlertHandler a m
 
 newtype Alert = Alert { unAlert :: ForeignPtr (CType Alert)}
 
@@ -386,38 +388,38 @@ instance ArrayLike (StdDeque Alert) where
       then return Nothing
       else Just <$> fromPtr (pure ptr)
 
-newAlertDeque :: IO (StdDeque Alert)
+newAlertDeque :: MonadIO m => m (StdDeque Alert)
 newAlertDeque =
-  fromPtr [CU.exp| DequeAlertPtr * { new std::deque<alert*>()} |]
+  liftIO $ fromPtr [CU.exp| DequeAlertPtr * { new std::deque<alert*>()} |]
 
-alertTimestamp :: IsAlert a => a -> IO Word64
+alertTimestamp :: MonadIO m => IsAlert a => a -> m Word64
 alertTimestamp ho =
-  withPtr (toAlert ho) $ \hoPtr ->
+  liftIO . withPtr (toAlert ho) $ \hoPtr ->
   [CU.exp| uint64_t { $(alert * hoPtr)->timestamp().time } |]
 
-alertType :: IsAlert a => a -> IO CInt
+alertType :: MonadIO m => IsAlert a => a -> m CInt
 alertType ho =
-  withPtr (toAlert ho) $ \hoPtr ->
+  liftIO . withPtr (toAlert ho) $ \hoPtr ->
   [CU.exp| int { $(alert * hoPtr)->type() } |]
 
-alertWhat :: IsAlert a => a -> IO Text
+alertWhat :: MonadIO m => IsAlert a => a -> m Text
 alertWhat ho =
-  withPtr (toAlert ho) $ \hoPtr ->
+  liftIO . withPtr (toAlert ho) $ \hoPtr ->
   fmap T.pack . peekCString =<< [CU.exp| const char * { $(alert * hoPtr)->what() } |]
 
-alertMessage :: IsAlert a => a -> IO Text
+alertMessage :: MonadIO m => IsAlert a => a -> m Text
 alertMessage ho =
-  withPtr (toAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (toAlert ho) $ \hoPtr -> do
   res <- fromPtr [CU.exp| string * { new std::string($(alert * hoPtr)->message()) } |]
   stdStringToText res
 
-alertCategory :: IsAlert a => a -> IO (BitFlags AlertCategory)
+alertCategory :: MonadIO m => IsAlert a => a -> m (BitFlags AlertCategory)
 alertCategory ho =
-  withPtr (toAlert ho) $ \hoPtr ->
+  liftIO . withPtr (toAlert ho) $ \hoPtr ->
   toEnum . fromIntegral <$> [CU.exp| int { $(alert * hoPtr)->category() } |]
 
 -- | Try to handle an alert of type @a@.
-handleAlert :: IsAlert a => Alert -> (a -> IO r) -> IO (Maybe r)
+handleAlert :: MonadIO m => IsAlert a => Alert -> (a -> m r) -> m (Maybe r)
 handleAlert alert hlr =
   case castAlert alert of
     Just a ->
@@ -426,7 +428,7 @@ handleAlert alert hlr =
       pure Nothing
 
 -- | Try to handle an alert by finding a proper handler from a list of handlers.
-handleAlerts :: Alert -> [AlertHandler r] -> IO (Maybe r)
+handleAlerts :: forall m r . MonadIO m => Alert -> [AlertHandler r m] -> m (Maybe r)
 handleAlerts alert hlrs =
   handle hlrs
   where
@@ -460,14 +462,14 @@ instance IsAlert TorrentAlert where
   toAlert = unTorrentAlert
 
 -- TODO in libtorrent 1.1.0
--- torrentName :: TorrentAlert -> IO Text
+-- torrentName :: TorrentAlert -> m Text
 -- torrentName ho =
---   withPtr (SubAlert ho) $ \hoPtr ->
+--   liftIO . withPtr (SubAlert ho) $ \hoPtr ->
 --   fmap T.pack . peekCString =<< [CU.exp| const char * { $(torrent_alert * hoPtr)->torrent_name() } |]
 
-getHandle :: IsTorrentAlert ho => ho -> IO TorrentHandle
+getHandle :: MonadIO m => IsTorrentAlert ho => ho -> m TorrentHandle
 getHandle ho =
-  asTorrentAlert ho $ \hoPtr ->
+  liftIO . asTorrentAlert ho $ \hoPtr ->
   fromPtr [CU.exp| torrent_handle * { new torrent_handle($(torrent_alert * hoPtr)->handle) } |]
 
 newtype PeerAlert = PeerAlert { unPeerAlert :: Alert}
@@ -486,9 +488,9 @@ instance IsAlert PeerAlert where
   fromAlert = PeerAlert
   toAlert = unPeerAlert
 
-peerAlertIp :: IsPeerAlert a => a -> IO (Text, C.CShort)
+peerAlertIp :: (MonadIO m, IsPeerAlert a) => a -> m (Text, C.CShort)
 peerAlertIp ho =
-  asPeerAlert ho $ \hoPtr -> do
+  liftIO . asPeerAlert ho $ \hoPtr -> do
   addr <- fromPtr [CU.block| string * {
                       tcp::endpoint ep = $(peer_alert * hoPtr)->ip;
                       return new std::string(ep.address().to_string());
@@ -501,9 +503,9 @@ peerAlertIp ho =
                   |]
   ( , port) <$> stdStringToText addr
 
-peerAlertPid :: IsPeerAlert a => a -> IO Sha1Hash
+peerAlertPid :: (MonadIO m, IsPeerAlert a) => a -> m Sha1Hash
 peerAlertPid ho =
-  asPeerAlert ho $ \hoPtr ->
+  liftIO . asPeerAlert ho $ \hoPtr ->
   fromPtr [CU.exp| sha1_hash * { new sha1_hash($(peer_alert * hoPtr)->pid) } |]
 
 newtype TrackerAlert = TrackerAlert { unTrackerAlert :: Alert}
@@ -522,16 +524,16 @@ instance IsAlert TrackerAlert where
   fromAlert = TrackerAlert
   toAlert = unTrackerAlert
 
-trackerAlertUrl :: IsTrackerAlert a => a -> IO Text
+trackerAlertUrl :: (MonadIO m, IsTrackerAlert a) => a -> m Text
 trackerAlertUrl ho =
-  asTrackerAlert ho $ \hoPtr -> do
+  liftIO . asTrackerAlert ho $ \hoPtr -> do
   res <- fromPtr [CU.exp| string * { new std::string($(tracker_alert * hoPtr)->url) } |]
   stdStringToText res
 
 -- TODO in libtorrent 1.1.0
--- trackerAlertUrl  :: TrackerAlert -> IO Text
+-- trackerAlertUrl  :: TrackerAlert -> m Text
 -- trackerAlertUrl ho =
---   withPtr (SubAlert ho) $ \hoPtr ->
+--   liftIO . withPtr (SubAlert ho) $ \hoPtr ->
 --   fmap T.pack . peekCString =<< [CU.exp| const char * { $(tracker_alert * hoPtr)->tracker_url() } |]
 
 newtype TorrentAddedAlert = TorrentAddedAlert { unTorrentAddedAlert :: Alert}
@@ -579,26 +581,26 @@ instance IsAlert ReadPieceAlert where
   fromAlert = ReadPieceAlert
   toAlert = unReadPieceAlert
 
-readPieceAlertEc :: ReadPieceAlert -> IO ErrorCode
+readPieceAlertEc :: MonadIO m => ReadPieceAlert -> m ErrorCode
 readPieceAlertEc ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   fromPtr [CU.exp| error_code * { new error_code($(read_piece_alert * hoPtr)->ec) } |]
 
-readPieceAlertBuffer :: ReadPieceAlert -> IO ByteString
+readPieceAlertBuffer :: MonadIO m => ReadPieceAlert -> m ByteString
 readPieceAlertBuffer ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
     csize <- readPieceAlertPiece ho
     chars <- [CU.exp| char * { $(read_piece_alert * hoPtr)->buffer.get() } |]
     BS.packCStringLen (chars, fromIntegral csize)
 
-readPieceAlertPiece :: ReadPieceAlert -> IO CInt
+readPieceAlertPiece :: MonadIO m => ReadPieceAlert -> m CInt
 readPieceAlertPiece ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(read_piece_alert * hoPtr)->piece } |]
 
-readPieceAlertSize :: ReadPieceAlert -> IO CInt
+readPieceAlertSize :: MonadIO m => ReadPieceAlert -> m CInt
 readPieceAlertSize ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(read_piece_alert * hoPtr)->size } |]
 
 newtype FileCompletedAlert = FileCompletedAlert { unFileCompletedAlert :: Alert}
@@ -616,9 +618,9 @@ instance IsAlert FileCompletedAlert where
   fromAlert = FileCompletedAlert
   toAlert = unFileCompletedAlert
 
-fileCompletedAlertIndex :: FileCompletedAlert -> IO CInt
+fileCompletedAlertIndex :: MonadIO m => FileCompletedAlert -> m CInt
 fileCompletedAlertIndex ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(file_completed_alert * hoPtr)->index } |]
 
 newtype FileRenamedAlert = FileRenamedAlert { unFileRenamedAlert :: Alert}
@@ -636,9 +638,9 @@ instance IsAlert FileRenamedAlert where
   fromAlert = FileRenamedAlert
   toAlert = unFileRenamedAlert
 
-fileRenamedAlertIndex :: FileRenamedAlert -> IO CInt
+fileRenamedAlertIndex :: MonadIO m => FileRenamedAlert -> m CInt
 fileRenamedAlertIndex ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(file_renamed_alert * hoPtr)->index } |]
 
 newtype FileRenameFailedAlert = FileRenameFailedAlert { unFileRenameFailedAlert :: Alert}
@@ -656,14 +658,14 @@ instance IsAlert FileRenameFailedAlert where
   fromAlert = FileRenameFailedAlert
   toAlert = unFileRenameFailedAlert
 
-fileRenameFailedAlertIndex :: FileRenameFailedAlert -> IO CInt
+fileRenameFailedAlertIndex :: MonadIO m => FileRenameFailedAlert -> m CInt
 fileRenameFailedAlertIndex ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(file_rename_failed_alert * hoPtr)->index } |]
 
-fileRenameFailedAlertError :: FileRenameFailedAlert -> IO ErrorCode
+fileRenameFailedAlertError :: MonadIO m => FileRenameFailedAlert -> m ErrorCode
 fileRenameFailedAlertError ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   fromPtr [CU.exp| error_code * { new error_code($(file_rename_failed_alert * hoPtr)->error) } |]
 
 data PerformanceWarning =
@@ -678,7 +680,7 @@ data PerformanceWarning =
   | TooFewOutgoingPorts
   | TooFewFileDescriptors
   | NumWarnings
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 newtype PerformanceAlert = PerformanceAlert { unPerformanceAlert :: Alert}
 
@@ -695,9 +697,9 @@ instance IsAlert PerformanceAlert where
   fromAlert = PerformanceAlert
   toAlert = unPerformanceAlert
 
-performanceAlertWarningCode :: PerformanceAlert -> IO PerformanceWarning
+performanceAlertWarningCode :: MonadIO m => PerformanceAlert -> m PerformanceWarning
 performanceAlertWarningCode ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   toEnum . fromIntegral <$> [CU.exp| int { $(performance_alert * hoPtr)->warning_code } |]
 
 newtype StateChangedAlert =  StateChangedAlert { unStateChangedAlert :: Alert}
@@ -715,14 +717,14 @@ instance IsAlert StateChangedAlert where
   fromAlert = StateChangedAlert
   toAlert = unStateChangedAlert
 
-stateChangedAlertState :: StateChangedAlert -> IO TorrentState
+stateChangedAlertState :: MonadIO m => StateChangedAlert -> m TorrentState
 stateChangedAlertState ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   toEnum . fromIntegral <$> [CU.exp| int { $(state_changed_alert * hoPtr)->state } |]
 
-stateChangedAlertPrevState :: StateChangedAlert -> IO TorrentState
+stateChangedAlertPrevState :: MonadIO m => StateChangedAlert -> m TorrentState
 stateChangedAlertPrevState ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   toEnum . fromIntegral <$> [CU.exp| int { $(state_changed_alert * hoPtr)->prev_state } |]
 
 newtype TrackerErrorAlert = TrackerErrorAlert { unTrackerErrorAlert :: Alert}
@@ -741,24 +743,24 @@ instance IsAlert TrackerErrorAlert where
   fromAlert = TrackerErrorAlert
   toAlert = unTrackerErrorAlert
 
-trackerErrorAlertTimesInRow :: TrackerErrorAlert -> IO CInt
+trackerErrorAlertTimesInRow :: MonadIO m => TrackerErrorAlert -> m CInt
 trackerErrorAlertTimesInRow ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(tracker_error_alert * hoPtr)->times_in_row } |]
 
-trackerErrorAlertStatusCode :: TrackerErrorAlert -> IO CInt
+trackerErrorAlertStatusCode :: MonadIO m => TrackerErrorAlert -> m CInt
 trackerErrorAlertStatusCode ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(tracker_error_alert * hoPtr)->status_code } |]
 
-trackerErrorAlertErrorCode :: TrackerErrorAlert -> IO ErrorCode
+trackerErrorAlertErrorCode :: MonadIO m => TrackerErrorAlert -> m ErrorCode
 trackerErrorAlertErrorCode ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   fromPtr [CU.exp| error_code * { new error_code($(tracker_error_alert * hoPtr)->error) } |]
 
-trackerErrorAlertMsg :: TrackerErrorAlert -> IO Text
+trackerErrorAlertMsg :: MonadIO m => TrackerErrorAlert -> m Text
 trackerErrorAlertMsg ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
   res <- fromPtr [CU.exp| string * { new std::string($(tracker_error_alert * hoPtr)->msg) } |]
   stdStringToText res
 
@@ -778,9 +780,9 @@ instance IsAlert TrackerWarningAlert where
   fromAlert = TrackerWarningAlert
   toAlert = unTrackerWarningAlert
 
-trackerWarningAlertMsg :: TrackerWarningAlert -> IO Text
+trackerWarningAlertMsg :: MonadIO m => TrackerWarningAlert -> m Text
 trackerWarningAlertMsg ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
   res <- fromPtr [CU.exp| string * { new std::string($(tracker_warning_alert * hoPtr)->msg) } |]
   stdStringToText res
 
@@ -800,14 +802,14 @@ instance IsAlert ScrapeReplyAlert where
   fromAlert = ScrapeReplyAlert
   toAlert = unScrapeReplyAlert
 
-scrapeReplyAlertComplete :: ScrapeReplyAlert -> IO CInt
+scrapeReplyAlertComplete :: MonadIO m => ScrapeReplyAlert -> m CInt
 scrapeReplyAlertComplete ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(scrape_reply_alert * hoPtr)->complete } |]
 
-scrapeReplyAlertIncomplete :: ScrapeReplyAlert -> IO CInt
+scrapeReplyAlertIncomplete :: MonadIO m => ScrapeReplyAlert -> m CInt
 scrapeReplyAlertIncomplete ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(scrape_reply_alert * hoPtr)->incomplete } |]
 
 newtype ScrapeFailedAlert = ScrapeFailedAlert { unScrapeFailedAlert :: Alert}
@@ -826,9 +828,9 @@ instance IsAlert ScrapeFailedAlert where
   fromAlert = ScrapeFailedAlert
   toAlert = unScrapeFailedAlert
 
-scrapeFailedAlertMsg :: ScrapeFailedAlert -> IO Text
+scrapeFailedAlertMsg :: MonadIO m => ScrapeFailedAlert -> m Text
 scrapeFailedAlertMsg ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
     str <- fromPtr [CU.exp| string * { new std::string($(scrape_failed_alert * hoPtr)->msg) } |]
     stdStringToText str
 
@@ -848,9 +850,9 @@ instance IsAlert TrackerReplyAlert where
   fromAlert = TrackerReplyAlert
   toAlert = unTrackerReplyAlert
 
-trackerReplyAlertNumPeers :: TrackerReplyAlert -> IO CInt
+trackerReplyAlertNumPeers :: MonadIO m => TrackerReplyAlert -> m CInt
 trackerReplyAlertNumPeers ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(tracker_reply_alert * hoPtr)->num_peers } |]
 
 newtype DhtReplyAlert = DhtReplyAlert { unDhtReplyAlert :: Alert}
@@ -869,9 +871,9 @@ instance IsAlert DhtReplyAlert where
   fromAlert = DhtReplyAlert
   toAlert = unDhtReplyAlert
 
-dhtReplyAlertNumPeers :: DhtReplyAlert -> IO CInt
+dhtReplyAlertNumPeers :: MonadIO m => DhtReplyAlert -> m CInt
 dhtReplyAlertNumPeers ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(dht_reply_alert * hoPtr)->num_peers } |]
 
 data AnnounceEvent =
@@ -879,7 +881,7 @@ data AnnounceEvent =
   | AnnounceCompleted
   | AnnounceStarted
   | AnnounceStopped
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 newtype TrackerAnnounceAlert = TrackerAnnounceAlert { unTrackerAnnounceAlert :: Alert}
 
@@ -897,9 +899,9 @@ instance IsAlert TrackerAnnounceAlert where
   fromAlert = TrackerAnnounceAlert
   toAlert = unTrackerAnnounceAlert
 
-trackerAnnounceAlertEvent :: TrackerAnnounceAlert -> IO AnnounceEvent
+trackerAnnounceAlertEvent :: MonadIO m => TrackerAnnounceAlert -> m AnnounceEvent
 trackerAnnounceAlertEvent ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   toEnum . fromIntegral <$> [CU.exp| int { $(tracker_announce_alert * hoPtr)->event } |]
 
 newtype HashFailedAlert = HashFailedAlert { unHashFailedAlert :: Alert}
@@ -917,9 +919,9 @@ instance IsAlert HashFailedAlert where
   fromAlert = HashFailedAlert
   toAlert = unHashFailedAlert
 
-hashFailedAlertPieceIndex :: HashFailedAlert -> IO CInt
+hashFailedAlertPieceIndex :: MonadIO m => HashFailedAlert -> m CInt
 hashFailedAlertPieceIndex ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(hash_failed_alert * hoPtr)->piece_index } |]
 
 newtype PeerBanAlert = PeerBanAlert { unPeerBanAlert :: Alert}
@@ -986,9 +988,9 @@ instance IsAlert PeerErrorAlert where
   fromAlert = PeerErrorAlert
   toAlert = unPeerErrorAlert
 
-peerErrorAlertError :: PeerErrorAlert -> IO ErrorCode
+peerErrorAlertError :: MonadIO m => PeerErrorAlert -> m ErrorCode
 peerErrorAlertError ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   fromPtr [CU.exp| error_code * { new error_code($(peer_error_alert * hoPtr)->error) } |]
 
 newtype PeerConnectAlert = PeerConnectAlert { unPeerConnectAlert :: Alert}
@@ -1007,9 +1009,9 @@ instance IsAlert PeerConnectAlert where
   fromAlert = PeerConnectAlert
   toAlert = unPeerConnectAlert
 
-peerConnectAlertSocketType :: PeerConnectAlert -> IO CInt
+peerConnectAlertSocketType :: MonadIO m => PeerConnectAlert -> m CInt
 peerConnectAlertSocketType ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(peer_connect_alert * hoPtr)->socket_type } |]
 
 newtype PeerDisconnectedAlert = PeerDisconnectedAlert { unPeerDisconnectedAlert :: Alert}
@@ -1028,9 +1030,9 @@ instance IsAlert PeerDisconnectedAlert where
   fromAlert = PeerDisconnectedAlert
   toAlert = unPeerDisconnectedAlert
 
-peerDisconnectedAlertError :: PeerDisconnectedAlert -> IO ErrorCode
+peerDisconnectedAlertError :: MonadIO m => PeerDisconnectedAlert -> m ErrorCode
 peerDisconnectedAlertError ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   fromPtr [CU.exp| error_code * { new error_code($(peer_disconnected_alert * hoPtr)->error) } |]
 
 newtype InvalidRequestAlert = InvalidRequestAlert { unInvalidRequestAlert :: Alert}
@@ -1049,9 +1051,9 @@ instance IsAlert InvalidRequestAlert where
   fromAlert = InvalidRequestAlert
   toAlert = unInvalidRequestAlert
 
-invalidRequestAlertRequest :: InvalidRequestAlert -> IO PeerRequest
+invalidRequestAlertRequest :: MonadIO m => InvalidRequestAlert -> m PeerRequest
 invalidRequestAlertRequest ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   fromPtr [CU.exp| peer_request * { new peer_request($(invalid_request_alert * hoPtr)->request) } |]
 
 newtype TorrentFinishedAlert = TorrentFinishedAlert { unTorrentFinishedAlert :: Alert}
@@ -1085,9 +1087,9 @@ instance IsAlert PieceFinishedAlert where
   fromAlert = PieceFinishedAlert
   toAlert = unPieceFinishedAlert
 
-pieceFinishedAlertPieceIndex :: PieceFinishedAlert -> IO CInt
+pieceFinishedAlertPieceIndex :: MonadIO m => PieceFinishedAlert -> m CInt
 pieceFinishedAlertPieceIndex ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(piece_finished_alert * hoPtr)->piece_index } |]
 
 newtype RequestDroppedAlert = RequestDroppedAlert { unRequestDroppedAlert :: Alert}
@@ -1106,14 +1108,14 @@ instance IsAlert RequestDroppedAlert where
   fromAlert = RequestDroppedAlert
   toAlert = unRequestDroppedAlert
 
-requestDroppedAlertBlockIndex :: RequestDroppedAlert -> IO CInt
+requestDroppedAlertBlockIndex :: MonadIO m => RequestDroppedAlert -> m CInt
 requestDroppedAlertBlockIndex ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(request_dropped_alert * hoPtr)->block_index } |]
 
-requestDroppedAlertPieceIndex :: RequestDroppedAlert -> IO CInt
+requestDroppedAlertPieceIndex :: MonadIO m => RequestDroppedAlert -> m CInt
 requestDroppedAlertPieceIndex ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(request_dropped_alert * hoPtr)->piece_index } |]
 
 newtype BlockTimeoutAlert = BlockTimeoutAlert { unBlockTimeoutAlert :: Alert}
@@ -1132,14 +1134,14 @@ instance IsAlert BlockTimeoutAlert where
   fromAlert = BlockTimeoutAlert
   toAlert = unBlockTimeoutAlert
 
-blockTimeoutAlertBlockIndex :: BlockTimeoutAlert -> IO CInt
+blockTimeoutAlertBlockIndex :: MonadIO m => BlockTimeoutAlert -> m CInt
 blockTimeoutAlertBlockIndex ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(block_timeout_alert * hoPtr)->block_index } |]
 
-blockTimeoutAlertPieceIndex :: BlockTimeoutAlert -> IO CInt
+blockTimeoutAlertPieceIndex :: MonadIO m => BlockTimeoutAlert -> m CInt
 blockTimeoutAlertPieceIndex ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(block_timeout_alert * hoPtr)->piece_index } |]
 
 newtype BlockFinishedAlert = BlockFinishedAlert { unBlockFinishedAlert :: Alert}
@@ -1158,14 +1160,14 @@ instance IsAlert BlockFinishedAlert where
   fromAlert = BlockFinishedAlert
   toAlert = unBlockFinishedAlert
 
-blockFinishedAlertBlockIndex :: BlockFinishedAlert -> IO CInt
+blockFinishedAlertBlockIndex :: MonadIO m => BlockFinishedAlert -> m CInt
 blockFinishedAlertBlockIndex ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(block_finished_alert * hoPtr)->block_index } |]
 
-blockFinishedAlertPieceIndex :: BlockFinishedAlert -> IO CInt
+blockFinishedAlertPieceIndex :: MonadIO m => BlockFinishedAlert -> m CInt
 blockFinishedAlertPieceIndex ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(block_finished_alert * hoPtr)->piece_index } |]
 
 newtype BlockDownloadingAlert = BlockDownloadingAlert { unBlockDownloadingAlert :: Alert}
@@ -1184,19 +1186,19 @@ instance IsAlert BlockDownloadingAlert where
   fromAlert = BlockDownloadingAlert
   toAlert = unBlockDownloadingAlert
 
-blockDownloadingAlertBlockIndex :: BlockDownloadingAlert -> IO CInt
+blockDownloadingAlertBlockIndex :: MonadIO m => BlockDownloadingAlert -> m CInt
 blockDownloadingAlertBlockIndex ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(block_downloading_alert * hoPtr)->block_index } |]
 
-blockDownloadingAlertPieceIndex :: BlockDownloadingAlert -> IO CInt
+blockDownloadingAlertPieceIndex :: MonadIO m => BlockDownloadingAlert -> m CInt
 blockDownloadingAlertPieceIndex ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(block_downloading_alert * hoPtr)->piece_index } |]
 
-blockDownloadingAlertPeerSpeedmsg :: BlockDownloadingAlert -> IO Text
+blockDownloadingAlertPeerSpeedmsg :: MonadIO m => BlockDownloadingAlert -> m Text
 blockDownloadingAlertPeerSpeedmsg ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
     cstr <- [CU.exp| const char * { $(block_downloading_alert * hoPtr)->peer_speedmsg } |]
     T.pack <$> peekCString cstr
 
@@ -1216,14 +1218,14 @@ instance IsAlert UnwantedBlockAlert where
   fromAlert = UnwantedBlockAlert
   toAlert = unUnwantedBlockAlert
 
-unwantedBlockAlertBlockIndex :: UnwantedBlockAlert -> IO CInt
+unwantedBlockAlertBlockIndex :: MonadIO m => UnwantedBlockAlert -> m CInt
 unwantedBlockAlertBlockIndex ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(unwanted_block_alert * hoPtr)->block_index } |]
 
-unwantedBlockAlertPieceIndex :: UnwantedBlockAlert -> IO CInt
+unwantedBlockAlertPieceIndex :: MonadIO m => UnwantedBlockAlert -> m CInt
 unwantedBlockAlertPieceIndex ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(unwanted_block_alert * hoPtr)->piece_index } |]
 
 newtype StorageMovedAlert = StorageMovedAlert { unStorageMovedAlert :: Alert}
@@ -1241,9 +1243,9 @@ instance IsAlert StorageMovedAlert where
   fromAlert = StorageMovedAlert
   toAlert = unStorageMovedAlert
 
-storageMovedAlertPath :: StorageMovedAlert -> IO Text
+storageMovedAlertPath :: MonadIO m => StorageMovedAlert -> m Text
 storageMovedAlertPath ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
   str <- fromPtr [CU.exp| string * { new std::string($(storage_moved_alert * hoPtr)->path) } |]
   stdStringToText str
 
@@ -1262,9 +1264,9 @@ instance IsAlert StorageMovedFailedAlert where
   fromAlert = StorageMovedFailedAlert
   toAlert = unStorageMovedFailedAlert
 
-storageMovedFailedAlertError :: StorageMovedFailedAlert -> IO ErrorCode
+storageMovedFailedAlertError :: MonadIO m => StorageMovedFailedAlert -> m ErrorCode
 storageMovedFailedAlertError ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   fromPtr [CU.exp| error_code * { new error_code($(storage_moved_failed_alert * hoPtr)->error) } |]
 
 newtype TorrentDeletedAlert = TorrentDeletedAlert { unTorrentDeletedAlert :: Alert}
@@ -1282,9 +1284,9 @@ instance IsAlert TorrentDeletedAlert where
   fromAlert = TorrentDeletedAlert
   toAlert = unTorrentDeletedAlert
 
-torrentDeletedAlertInfoHash :: TorrentDeletedAlert -> IO ByteString
+torrentDeletedAlertInfoHash :: MonadIO m => TorrentDeletedAlert -> m ByteString
 torrentDeletedAlertInfoHash ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
   ih <- fromPtr [CU.exp| sha1_hash * { new sha1_hash($(torrent_deleted_alert * hoPtr)->info_hash) } |]
   sha1HashToByteString ih
 
@@ -1303,15 +1305,15 @@ instance IsAlert TorrentDeleteFailedAlert where
   fromAlert = TorrentDeleteFailedAlert
   toAlert = unTorrentDeleteFailedAlert
 
-torrentDeleteFailedAlertInfoHash :: TorrentDeleteFailedAlert -> IO ByteString
+torrentDeleteFailedAlertInfoHash :: MonadIO m => TorrentDeleteFailedAlert -> m ByteString
 torrentDeleteFailedAlertInfoHash ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
   ih <- fromPtr [CU.exp| sha1_hash * { new sha1_hash($(torrent_delete_failed_alert * hoPtr)->info_hash) } |]
   sha1HashToByteString ih
 
-torrentDeleteFailedAlertError :: TorrentDeleteFailedAlert -> IO ErrorCode
+torrentDeleteFailedAlertError :: MonadIO m => TorrentDeleteFailedAlert -> m ErrorCode
 torrentDeleteFailedAlertError ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   fromPtr [CU.exp| error_code * { new error_code($(torrent_delete_failed_alert * hoPtr)->error) } |]
 
 newtype SaveResumeDataAlert = SaveResumeDataAlert { unSaveResumeDataAlert :: Alert}
@@ -1329,9 +1331,9 @@ instance IsAlert SaveResumeDataAlert where
   fromAlert = SaveResumeDataAlert
   toAlert = unSaveResumeDataAlert
 
-saveResumeDataAlertResumeData :: SaveResumeDataAlert -> IO Bencoded
+saveResumeDataAlertResumeData :: MonadIO m => SaveResumeDataAlert -> m Bencoded
 saveResumeDataAlertResumeData ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
   ePtr <- [CU.exp| entry * {$(save_resume_data_alert * hoPtr)->resume_data.get()} |]
   entryToBencoded ePtr
 
@@ -1350,9 +1352,9 @@ instance IsAlert SaveResumeDataFailedAlert where
   fromAlert = SaveResumeDataFailedAlert
   toAlert = unSaveResumeDataFailedAlert
 
-saveResumeDataFailedAlertError :: SaveResumeDataFailedAlert -> IO ErrorCode
+saveResumeDataFailedAlertError :: MonadIO m => SaveResumeDataFailedAlert -> m ErrorCode
 saveResumeDataFailedAlertError ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   fromPtr [CU.exp| error_code * { new error_code($(save_resume_data_failed_alert * hoPtr)->error) } |]
 
 newtype TorrentPausedAlert = TorrentPausedAlert { unTorrentPausedAlert :: Alert}
@@ -1415,15 +1417,15 @@ instance IsAlert UrlSeedAlert where
   fromAlert = UrlSeedAlert
   toAlert = unUrlSeedAlert
 
-urlSeedAlertMsg :: UrlSeedAlert -> IO Text
+urlSeedAlertMsg :: MonadIO m => UrlSeedAlert -> m Text
 urlSeedAlertMsg ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
   str <- fromPtr [CU.exp| string * { new std::string($(url_seed_alert * hoPtr)->msg) } |]
   stdStringToText str
 
-urlSeedAlertUrl :: UrlSeedAlert -> IO Text
+urlSeedAlertUrl :: MonadIO m => UrlSeedAlert -> m Text
 urlSeedAlertUrl ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
   str <- fromPtr [CU.exp| string * { new std::string($(url_seed_alert * hoPtr)->url) } |]
   stdStringToText str
 
@@ -1442,14 +1444,14 @@ instance IsAlert FileErrorAlert where
   fromAlert = FileErrorAlert
   toAlert = unFileErrorAlert
 
-fileErrorAlertError :: FileErrorAlert -> IO ErrorCode
+fileErrorAlertError :: MonadIO m => FileErrorAlert -> m ErrorCode
 fileErrorAlertError ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   fromPtr [CU.exp| error_code * { new error_code($(file_error_alert * hoPtr)->error) } |]
 
-fileErrorAlertFile :: FileErrorAlert -> IO Text
+fileErrorAlertFile :: MonadIO m => FileErrorAlert -> m Text
 fileErrorAlertFile ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
   str <- fromPtr [CU.exp| string * { new string($(file_error_alert * hoPtr)->file) } |]
   stdStringToText str
 
@@ -1468,9 +1470,9 @@ instance IsAlert MetadataFailedAlert where
   fromAlert = MetadataFailedAlert
   toAlert = unMetadataFailedAlert
 
-metadataFailedAlertError :: MetadataFailedAlert -> IO ErrorCode
+metadataFailedAlertError :: MonadIO m => MetadataFailedAlert -> m ErrorCode
 metadataFailedAlertError ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   fromPtr [CU.exp| error_code * { new error_code($(metadata_failed_alert * hoPtr)->error) } |]
 
 newtype MetadataReceivedAlert = MetadataReceivedAlert { unMetadataReceivedAlert :: Alert}
@@ -1503,9 +1505,9 @@ instance IsAlert UdpErrorAlert where
   fromAlert = UdpErrorAlert
   toAlert = unUdpErrorAlert
 
-udpErrorAlertError :: UdpErrorAlert -> IO ErrorCode
+udpErrorAlertError :: MonadIO m => UdpErrorAlert -> m ErrorCode
 udpErrorAlertError ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   fromPtr [CU.exp| error_code * { new error_code($(udp_error_alert * hoPtr)->error) } |]
 
 newtype ExternalIpAlert = ExternalIpAlert { unExternalIpAlert :: Alert}
@@ -1523,9 +1525,9 @@ instance IsAlert ExternalIpAlert where
   fromAlert = ExternalIpAlert
   toAlert = unExternalIpAlert
 
-externalIpAlertExternalAddress :: ExternalIpAlert -> IO Text
+externalIpAlertExternalAddress :: MonadIO m => ExternalIpAlert -> m Text
 externalIpAlertExternalAddress ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
   str <- fromPtr [CU.exp| string * { new std::string($(external_ip_alert * hoPtr)->external_address.to_string()) } |]
   stdStringToText str
 
@@ -1548,7 +1550,7 @@ data SocketType =
   | SocketUdp
   | SocketI2p
   | SocketSocks5
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 data ListenOp =
   ListenParseAddr
@@ -1557,11 +1559,11 @@ data ListenOp =
   | ListenListen
   | ListenGetPeerName
   | ListenAccept
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
-listenFailedAlertEndpoint :: ListenFailedAlert -> IO (Text, C.CShort)
+listenFailedAlertEndpoint :: MonadIO m => ListenFailedAlert -> m (Text, C.CShort)
 listenFailedAlertEndpoint ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
     addr <- fromPtr [CU.block| string * {
                         tcp::endpoint ep = $(listen_failed_alert * hoPtr)->endpoint;
                         return new std::string(ep.address().to_string());
@@ -1574,19 +1576,19 @@ listenFailedAlertEndpoint ho =
             |]
     ( , port) <$> stdStringToText addr
 
-listenFailedAlertError :: ListenFailedAlert -> IO ErrorCode
+listenFailedAlertError :: MonadIO m => ListenFailedAlert -> m ErrorCode
 listenFailedAlertError ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
     fromPtr [CU.exp| error_code * { new error_code($(listen_failed_alert * hoPtr)->error) } |]
 
-listenFailedAlertOperation :: ListenFailedAlert -> IO ListenOp
+listenFailedAlertOperation :: MonadIO m => ListenFailedAlert -> m ListenOp
 listenFailedAlertOperation ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
     toEnum . fromIntegral <$> [CU.exp| int { $(listen_failed_alert * hoPtr)->operation } |]
 
-listenFailedAlertSockType :: ListenFailedAlert -> IO SocketType
+listenFailedAlertSockType :: MonadIO m => ListenFailedAlert -> m SocketType
 listenFailedAlertSockType ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
     toEnum . fromIntegral <$> [CU.exp| int { $(listen_failed_alert * hoPtr)->sock_type } |]
 
 newtype ListenSucceededAlert = ListenSucceededAlert { unListenSucceededAlert :: Alert}
@@ -1602,9 +1604,9 @@ instance IsAlert ListenSucceededAlert where
   fromAlert = ListenSucceededAlert
   toAlert = unListenSucceededAlert
 
-listenSucceededAlertEndpoint :: ListenSucceededAlert -> IO (Text, C.CShort)
+listenSucceededAlertEndpoint :: MonadIO m => ListenSucceededAlert -> m (Text, C.CShort)
 listenSucceededAlertEndpoint ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
     addr <- fromPtr [CU.block| string * {
                         tcp::endpoint ep = $(listen_succeeded_alert * hoPtr)->endpoint;
                         return new std::string(ep.address().to_string());
@@ -1617,9 +1619,9 @@ listenSucceededAlertEndpoint ho =
             |]
     ( , port) <$> stdStringToText addr
 
-listenSucceededAlertSockType :: ListenSucceededAlert -> IO SocketType
+listenSucceededAlertSockType :: MonadIO m => ListenSucceededAlert -> m SocketType
 listenSucceededAlertSockType ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
     toEnum . fromIntegral <$> [CU.exp| int { $(listen_succeeded_alert * hoPtr)->sock_type } |]
 
 newtype PortmapErrorAlert = PortmapErrorAlert { unPortmapErrorAlert :: Alert}
@@ -1635,19 +1637,19 @@ instance IsAlert PortmapErrorAlert where
   fromAlert = PortmapErrorAlert
   toAlert = unPortmapErrorAlert
 
-portmapErrorAlertError :: PortmapErrorAlert -> IO ErrorCode
+portmapErrorAlertError :: MonadIO m => PortmapErrorAlert -> m ErrorCode
 portmapErrorAlertError ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   fromPtr [CU.exp| error_code * { new error_code($(portmap_error_alert * hoPtr)->error) } |]
 
-portmapErrorAlertMapType :: PortmapErrorAlert -> IO CInt
+portmapErrorAlertMapType :: MonadIO m => PortmapErrorAlert -> m CInt
 portmapErrorAlertMapType ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(portmap_error_alert * hoPtr)->map_type } |]
 
-portmapErrorAlertMapping :: PortmapErrorAlert -> IO CInt
+portmapErrorAlertMapping :: MonadIO m => PortmapErrorAlert -> m CInt
 portmapErrorAlertMapping ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(portmap_error_alert * hoPtr)->mapping } |]
 
 newtype PortmapAlert = PortmapAlert { unPortmapAlert :: Alert}
@@ -1663,19 +1665,19 @@ instance IsAlert PortmapAlert where
   fromAlert = PortmapAlert
   toAlert = unPortmapAlert
 
-portmapAlertMapType :: PortmapAlert -> IO CInt
+portmapAlertMapType :: MonadIO m => PortmapAlert -> m CInt
 portmapAlertMapType ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(portmap_alert * hoPtr)->map_type } |]
 
-portmapAlertMapping :: PortmapAlert -> IO CInt
+portmapAlertMapping :: MonadIO m => PortmapAlert -> m CInt
 portmapAlertMapping ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(portmap_alert * hoPtr)->mapping } |]
 
-portmapAlertExternalPort :: PortmapAlert -> IO CInt
+portmapAlertExternalPort :: MonadIO m => PortmapAlert -> m CInt
 portmapAlertExternalPort ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(portmap_alert * hoPtr)->external_port } |]
 
 newtype PortmapLogAlert = PortmapLogAlert { unPortmapLogAlert :: Alert}
@@ -1691,15 +1693,15 @@ instance IsAlert PortmapLogAlert where
   fromAlert = PortmapLogAlert
   toAlert = unPortmapLogAlert
 
-portmapLogAlertMsg :: PortmapLogAlert -> IO Text
+portmapLogAlertMsg :: MonadIO m => PortmapLogAlert -> m Text
 portmapLogAlertMsg ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
   str <- fromPtr [CU.exp| string * { new std::string($(portmap_log_alert * hoPtr)->msg) } |]
   stdStringToText str
 
-portmapLogAlertMapType :: PortmapLogAlert -> IO CInt
+portmapLogAlertMapType :: MonadIO m => PortmapLogAlert -> m CInt
 portmapLogAlertMapType ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(portmap_log_alert * hoPtr)->map_type } |]
 
 
@@ -1718,9 +1720,9 @@ instance IsAlert FastresumeRejectedAlert where
   fromAlert = FastresumeRejectedAlert
   toAlert = unFastresumeRejectedAlert
 
-fastresumeRejectedAlertError :: FastresumeRejectedAlert -> IO ErrorCode
+fastresumeRejectedAlertError :: MonadIO m => FastresumeRejectedAlert -> m ErrorCode
 fastresumeRejectedAlertError ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   fromPtr [CU.exp| error_code * { new error_code($(fastresume_rejected_alert * hoPtr)->error) } |]
 
 data BlockedReason =
@@ -1730,7 +1732,7 @@ data BlockedReason =
   | PrivilegedPorts
   | UtpDisabled
   | TcpDisabled
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 newtype PeerBlockedAlert = PeerBlockedAlert { unPeerBlockedAlert :: Alert}
 
@@ -1747,15 +1749,15 @@ instance IsAlert PeerBlockedAlert where
   fromAlert = PeerBlockedAlert
   toAlert = unPeerBlockedAlert
 
-peerBlockedAlertIp :: PeerBlockedAlert -> IO Text
+peerBlockedAlertIp :: MonadIO m => PeerBlockedAlert -> m Text
 peerBlockedAlertIp ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
   str <- fromPtr [CU.exp| string * { new std::string($(peer_blocked_alert * hoPtr)->ip.to_string()) } |]
   stdStringToText str
 
-peerBlockedAlertReason :: PeerBlockedAlert -> IO BlockedReason
+peerBlockedAlertReason :: MonadIO m => PeerBlockedAlert -> m BlockedReason
 peerBlockedAlertReason ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   toEnum . fromIntegral <$> [CU.exp| int { $(peer_blocked_alert * hoPtr)->reason } |]
 
 newtype DhtAnnounceAlert = DhtAnnounceAlert { unDhtAnnounceAlert :: Alert}
@@ -1771,20 +1773,20 @@ instance IsAlert DhtAnnounceAlert where
   fromAlert = DhtAnnounceAlert
   toAlert = unDhtAnnounceAlert
 
-dhtAnnounceAlertIp :: DhtAnnounceAlert -> IO Text
+dhtAnnounceAlertIp :: MonadIO m => DhtAnnounceAlert -> m Text
 dhtAnnounceAlertIp ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
   str <- fromPtr[CU.exp| string * { new std::string($(dht_announce_alert * hoPtr)->ip.to_string()) } |]
   stdStringToText str
 
-dhtAnnounceAlertPort :: DhtAnnounceAlert -> IO CInt
+dhtAnnounceAlertPort :: MonadIO m => DhtAnnounceAlert -> m CInt
 dhtAnnounceAlertPort ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(dht_announce_alert * hoPtr)->port } |]
 
-dhtAnnounceAlertInfoHash :: DhtAnnounceAlert -> IO ByteString
+dhtAnnounceAlertInfoHash :: MonadIO m => DhtAnnounceAlert -> m ByteString
 dhtAnnounceAlertInfoHash ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
   ih <- fromPtr [CU.exp| sha1_hash * { new sha1_hash($(dht_announce_alert * hoPtr)->info_hash) } |]
   sha1HashToByteString ih
 
@@ -1801,9 +1803,9 @@ instance IsAlert DhtGetPeersAlert where
   fromAlert = DhtGetPeersAlert
   toAlert = unDhtGetPeersAlert
 
-dhtGetPeersAlertInfoHash :: DhtGetPeersAlert -> IO ByteString
+dhtGetPeersAlertInfoHash :: MonadIO m => DhtGetPeersAlert -> m ByteString
 dhtGetPeersAlertInfoHash ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
   ih <- fromPtr [CU.exp| sha1_hash * { new sha1_hash($(dht_get_peers_alert * hoPtr)->info_hash) } |]
   sha1HashToByteString ih
 
@@ -1819,7 +1821,7 @@ data StatsChannel =
   | DownloadDhtProtocol
   | DownloadTrackerProtocol
   | NumChannels
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 newtype StatsAlert = StatsAlert { unStatsAlert :: Alert}
 
@@ -1836,16 +1838,16 @@ instance IsAlert StatsAlert where
   fromAlert = StatsAlert
   toAlert = unStatsAlert
 
-statsAlertTransferred :: StatsAlert -> IO [(StatsChannel, CInt)]
+statsAlertTransferred :: MonadIO m => StatsAlert -> m [(StatsChannel, CInt)]
 statsAlertTransferred ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
   trPtr <- [CU.exp| int * {$(stats_alert * hoPtr)->transferred } |]
   res <- peekArray (fromEnum NumChannels) trPtr
   return $ zip [minBound..] res
 
-statsAlertInterval :: StatsAlert -> IO CInt
+statsAlertInterval :: MonadIO m => StatsAlert -> m CInt
 statsAlertInterval ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(stats_alert * hoPtr)->interval } |]
 
 newtype CacheFlushedAlert = CacheFlushedAlert { unCacheFlushedAlert :: Alert}
@@ -1865,7 +1867,7 @@ instance IsAlert CacheFlushedAlert where
 
 data AnonymousModeKind =
   TrackerNotAnonymous
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 newtype AnonymousModeAlert = AnonymousModeAlert { unAnonymousModeAlert :: Alert}
 
@@ -1882,14 +1884,14 @@ instance IsAlert AnonymousModeAlert where
   fromAlert = AnonymousModeAlert
   toAlert = unAnonymousModeAlert
 
-anonymousModeAlertKind :: AnonymousModeAlert -> IO AnonymousModeKind
+anonymousModeAlertKind :: MonadIO m => AnonymousModeAlert -> m AnonymousModeKind
 anonymousModeAlertKind ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   toEnum . fromIntegral <$> [CU.exp| int { $(anonymous_mode_alert * hoPtr)->kind } |]
 
-anonymousModeAlertStr :: AnonymousModeAlert -> IO Text
+anonymousModeAlertStr :: MonadIO m => AnonymousModeAlert -> m Text
 anonymousModeAlertStr ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
   str <- fromPtr [CU.exp| string * { new std::string($(anonymous_mode_alert * hoPtr)->str) } |]
   stdStringToText str
 
@@ -1925,9 +1927,9 @@ instance IsAlert TrackeridAlert where
   fromAlert = TrackeridAlert
   toAlert = unTrackeridAlert
 
-trackeridAlertTrackerid :: TrackeridAlert -> IO Text
+trackeridAlertTrackerid :: MonadIO m => TrackeridAlert -> m Text
 trackeridAlertTrackerid ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
   str <- fromPtr [CU.exp| string * { new std::string ($(trackerid_alert * hoPtr)->trackerid) } |]
   stdStringToText str
 
@@ -1948,7 +1950,7 @@ data RssState =
   StateUpdating
   | StateUpdated
   | StateError
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 newtype RssAlert = RssAlert { unRssAlert :: Alert}
 
@@ -1963,25 +1965,25 @@ instance IsAlert RssAlert where
   fromAlert = RssAlert
   toAlert = unRssAlert
 
-rssAlertHandle :: RssAlert -> IO FeedHandle
+rssAlertHandle :: MonadIO m => RssAlert -> m FeedHandle
 rssAlertHandle ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   fromPtr [CU.exp| feed_handle * { new feed_handle($(rss_alert * hoPtr)->handle) } |]
 
-rssAlertUrl :: RssAlert -> IO Text
+rssAlertUrl :: MonadIO m => RssAlert -> m Text
 rssAlertUrl ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
   str <- fromPtr [CU.exp| string * { new std::string($(rss_alert * hoPtr)->url) } |]
   stdStringToText str
 
-rssAlertState :: RssAlert -> IO RssState
+rssAlertState :: MonadIO m => RssAlert -> m RssState
 rssAlertState ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   toEnum . fromIntegral <$> [CU.exp| int { $(rss_alert * hoPtr)->state } |]
 
-rssAlertError :: RssAlert -> IO ErrorCode
+rssAlertError :: MonadIO m => RssAlert -> m ErrorCode
 rssAlertError ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   fromPtr [CU.exp| error_code * { new error_code($(rss_alert * hoPtr)->error) } |]
 
 newtype TorrentErrorAlert = TorrentErrorAlert { unTorrentErrorAlert :: Alert}
@@ -1999,9 +2001,9 @@ instance IsAlert TorrentErrorAlert where
   fromAlert = TorrentErrorAlert
   toAlert = unTorrentErrorAlert
 
-torrentErrorAlertError :: TorrentErrorAlert -> IO ErrorCode
+torrentErrorAlertError :: MonadIO m => TorrentErrorAlert -> m ErrorCode
 torrentErrorAlertError ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   fromPtr [CU.exp| error_code * { new error_code($(torrent_error_alert * hoPtr)->error) } |]
 
 newtype TorrentNeedCertAlert = TorrentNeedCertAlert { unTorrentNeedCertAlert :: Alert}
@@ -2019,9 +2021,9 @@ instance IsAlert TorrentNeedCertAlert where
   fromAlert = TorrentNeedCertAlert
   toAlert = unTorrentNeedCertAlert
 
-torrentNeedCertAlertError :: TorrentNeedCertAlert -> IO ErrorCode
+torrentNeedCertAlertError :: MonadIO m => TorrentNeedCertAlert -> m ErrorCode
 torrentNeedCertAlertError ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   fromPtr [CU.exp| error_code * { new error_code($(torrent_need_cert_alert * hoPtr)->error) } |]
 
 data IncomingSocketType =
@@ -2035,7 +2037,7 @@ data IncomingSocketType =
   | IncomingSslSocks5
   | IncomingHTTPS
   | IncomingSslUTP
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 newtype IncomingConnectionAlert = IncomingConnectionAlert { unIncomingConnectionAlert :: Alert}
 
@@ -2050,14 +2052,14 @@ instance IsAlert IncomingConnectionAlert where
   fromAlert = IncomingConnectionAlert
   toAlert = unIncomingConnectionAlert
 
-incomingConnectionAlertSocketType :: IncomingConnectionAlert -> IO IncomingSocketType
+incomingConnectionAlertSocketType :: MonadIO m => IncomingConnectionAlert -> m IncomingSocketType
 incomingConnectionAlertSocketType ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   toEnum . fromIntegral <$> [CU.exp| int { $(incoming_connection_alert * hoPtr)->socket_type } |]
 
-incomingConnectionAlertIp :: IncomingConnectionAlert -> IO (Text, C.CShort)
+incomingConnectionAlertIp :: MonadIO m => IncomingConnectionAlert -> m (Text, C.CShort)
 incomingConnectionAlertIp ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
     addr <- fromPtr [CU.block| string * {
                         tcp::endpoint ep = $(incoming_connection_alert * hoPtr)->ip;
                         return new std::string(ep.address().to_string());
@@ -2085,14 +2087,14 @@ instance IsAlert AddTorrentAlert where
   fromAlert = AddTorrentAlert
   toAlert = unAddTorrentAlert
 
-addTorrentAlertParams :: AddTorrentAlert -> IO AddTorrentParams
+addTorrentAlertParams :: MonadIO m => AddTorrentAlert -> m AddTorrentParams
 addTorrentAlertParams ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   fromPtr [CU.exp| add_torrent_params * { new add_torrent_params($(add_torrent_alert * hoPtr)->params) } |]
 
-addTorrentAlertError :: AddTorrentAlert -> IO ErrorCode
+addTorrentAlertError :: MonadIO m => AddTorrentAlert -> m ErrorCode
 addTorrentAlertError ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   fromPtr [CU.exp| error_code * { new error_code($(add_torrent_alert * hoPtr)->error) } |]
 
 newtype StateUpdateAlert = StateUpdateAlert { unStateUpdateAlert :: Alert}
@@ -2108,9 +2110,9 @@ instance IsAlert StateUpdateAlert where
   fromAlert = StateUpdateAlert
   toAlert = unStateUpdateAlert
 
-stateUpdateAlertStatus :: StateUpdateAlert -> IO (StdVector TorrentStatus)
+stateUpdateAlertStatus :: MonadIO m => StateUpdateAlert -> m (StdVector TorrentStatus)
 stateUpdateAlertStatus ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   fromPtr [CU.exp| VectorTorrentStatus * { new VectorTorrentStatus($(state_update_alert * hoPtr)->status) } |]
 
 newtype RssItemAlert = RssItemAlert { unRssItemAlert :: Alert}
@@ -2126,14 +2128,14 @@ instance IsAlert RssItemAlert where
   fromAlert = RssItemAlert
   toAlert = unRssItemAlert
 
-rssItemAlertHandle :: RssItemAlert -> IO FeedHandle
+rssItemAlertHandle :: MonadIO m => RssItemAlert -> m FeedHandle
 rssItemAlertHandle ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   fromPtr [CU.exp| feed_handle * { new feed_handle($(rss_item_alert * hoPtr)->handle) } |]
 
-rssItemAlertItem :: RssItemAlert -> IO FeedItem
+rssItemAlertItem :: MonadIO m => RssItemAlert -> m FeedItem
 rssItemAlertItem ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   fromPtr [CU.exp| feed_item * { new feed_item($(rss_item_alert * hoPtr)->item) } |]
 
 -- TODO: libtorrent 1.1
@@ -2143,7 +2145,7 @@ rssItemAlertItem ho =
 data DhtOperation =
   DhtOperationUnknown
   | DhtOperationHostLookup
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 newtype DhtErrorAlert = DhtErrorAlert { unDhtErrorAlert :: Alert}
 
@@ -2158,14 +2160,14 @@ instance IsAlert DhtErrorAlert where
   fromAlert = DhtErrorAlert
   toAlert = unDhtErrorAlert
 
-dhtErrorAlertOperation :: DhtErrorAlert -> IO DhtOperation
+dhtErrorAlertOperation :: MonadIO m => DhtErrorAlert -> m DhtOperation
 dhtErrorAlertOperation ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   toEnum . fromIntegral <$> [CU.exp| int { $(dht_error_alert * hoPtr)->operation } |]
 
-dhtErrorAlertError :: DhtErrorAlert -> IO ErrorCode
+dhtErrorAlertError :: MonadIO m => DhtErrorAlert -> m ErrorCode
 dhtErrorAlertError ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   fromPtr [CU.exp| error_code * { new error_code($(dht_error_alert * hoPtr)->error) } |]
 
 newtype DhtImmutableItemAlert = DhtImmutableItemAlert { unDhtImmutableItemAlert :: Alert}
@@ -2181,15 +2183,15 @@ instance IsAlert DhtImmutableItemAlert where
   fromAlert = DhtImmutableItemAlert
   toAlert = unDhtImmutableItemAlert
 
-dhtImmutableItemAlertTarget :: DhtImmutableItemAlert -> IO ByteString
+dhtImmutableItemAlertTarget :: MonadIO m => DhtImmutableItemAlert -> m ByteString
 dhtImmutableItemAlertTarget ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
   tgt <- fromPtr [CU.exp| sha1_hash * { new sha1_hash($(dht_immutable_item_alert * hoPtr)->target) } |]
   sha1HashToByteString tgt
 
-dhtImmutableItemAlertItem :: DhtImmutableItemAlert -> IO Bencoded
+dhtImmutableItemAlertItem :: MonadIO m => DhtImmutableItemAlert -> m Bencoded
 dhtImmutableItemAlertItem ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
   ePtr <- [CU.exp| entry * { new entry($(dht_immutable_item_alert * hoPtr)->item) } |]
   entryToBencoded ePtr
 
@@ -2206,9 +2208,9 @@ instance IsAlert DhtMutableItemAlert where
   fromAlert = DhtMutableItemAlert
   toAlert = unDhtMutableItemAlert
 
-dhtMutableItemAlertKey :: DhtMutableItemAlert -> IO ByteString
+dhtMutableItemAlertKey :: MonadIO m => DhtMutableItemAlert -> m ByteString
 dhtMutableItemAlertKey ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   allocaArray 32 $ \aPtr -> do
     [CU.block| void {
         boost::array<char, 32> key =$(dht_mutable_item_alert * hoPtr)->key;
@@ -2218,9 +2220,9 @@ dhtMutableItemAlertKey ho =
     |]
     BS.packCStringLen (aPtr, 32)
 
-dhtMutableItemAlertSignature :: DhtMutableItemAlert -> IO ByteString
+dhtMutableItemAlertSignature :: MonadIO m => DhtMutableItemAlert -> m ByteString
 dhtMutableItemAlertSignature ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   allocaArray 64 $ \aPtr -> do
     [CU.block| void {
         boost::array<char, 64> signature =$(dht_mutable_item_alert * hoPtr)->signature;
@@ -2230,20 +2232,20 @@ dhtMutableItemAlertSignature ho =
     |]
     BS.packCStringLen (aPtr, 64)
 
-dhtMutableItemAlertSalt :: DhtMutableItemAlert -> IO Text
+dhtMutableItemAlertSalt :: MonadIO m => DhtMutableItemAlert -> m Text
 dhtMutableItemAlertSalt ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
   str <- fromPtr [CU.exp| string * { new std::string($(dht_mutable_item_alert * hoPtr)->salt) } |]
   stdStringToText str
 
-dhtMutableItemAlertSeq :: DhtMutableItemAlert -> IO Word64
+dhtMutableItemAlertSeq :: MonadIO m => DhtMutableItemAlert -> m Word64
 dhtMutableItemAlertSeq ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| uint64_t { $(dht_mutable_item_alert * hoPtr)->seq } |]
 
-dhtMutableItemAlertItem :: DhtMutableItemAlert -> IO Bencoded
+dhtMutableItemAlertItem :: MonadIO m => DhtMutableItemAlert -> m Bencoded
 dhtMutableItemAlertItem ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
   ePtr <- [CU.exp| entry * { new entry($(dht_mutable_item_alert * hoPtr)->item) } |]
   entryToBencoded ePtr
 
@@ -2260,9 +2262,9 @@ instance IsAlert DhtPutAlert where
   fromAlert = DhtPutAlert
   toAlert = unDhtPutAlert
 
-dhtPutAlertPublicKey :: DhtPutAlert -> IO ByteString
+dhtPutAlertPublicKey :: MonadIO m => DhtPutAlert -> m ByteString
 dhtPutAlertPublicKey ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   allocaArray 32 $ \aPtr -> do
     [CU.block| void {
         boost::array<char, 32> key =$(dht_put_alert * hoPtr)->public_key;
@@ -2272,9 +2274,9 @@ dhtPutAlertPublicKey ho =
     |]
     BS.packCStringLen (aPtr, 32)
 
-dhtPutAlertSignature :: DhtPutAlert -> IO ByteString
+dhtPutAlertSignature :: MonadIO m => DhtPutAlert -> m ByteString
 dhtPutAlertSignature ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   allocaArray 64 $ \aPtr -> do
     [CU.block| void {
         boost::array<char, 64> signature =$(dht_put_alert * hoPtr)->signature;
@@ -2284,20 +2286,20 @@ dhtPutAlertSignature ho =
     |]
     BS.packCStringLen (aPtr, 64)
 
-dhtPutAlertSalt :: DhtPutAlert -> IO Text
+dhtPutAlertSalt :: MonadIO m => DhtPutAlert -> m Text
 dhtPutAlertSalt ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
   str <- fromPtr [CU.exp| string * { new std::string($(dht_put_alert * hoPtr)->salt) } |]
   stdStringToText str
 
-dhtPutAlertSeq :: DhtPutAlert -> IO Word64
+dhtPutAlertSeq :: MonadIO m => DhtPutAlert -> m Word64
 dhtPutAlertSeq ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| uint64_t { $(dht_put_alert * hoPtr)->seq } |]
 
-dhtPutAlertTarget :: DhtPutAlert -> IO ByteString
+dhtPutAlertTarget :: MonadIO m => DhtPutAlert -> m ByteString
 dhtPutAlertTarget ho =
-  withPtr (SubAlert ho) $ \hoPtr -> do
+  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
   tgt <- fromPtr [CU.exp| sha1_hash * { new sha1_hash($(dht_put_alert * hoPtr)->target) } |]
   sha1HashToByteString tgt
 
@@ -2316,9 +2318,9 @@ instance IsAlert I2pAlert where
   fromAlert = I2pAlert
   toAlert = unI2pAlert
 
-i2pAlertError :: I2pAlert -> IO ErrorCode
+i2pAlertError :: MonadIO m => I2pAlert -> m ErrorCode
 i2pAlertError ho =
-  withPtr (SubAlert ho) $ \hoPtr ->
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   fromPtr [CU.exp| error_code * { new error_code($(i2p_alert * hoPtr)->error) } |]
 
 

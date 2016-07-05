@@ -8,14 +8,11 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | <http://www.libtorrent.org/reference-RSS.html#feed_handle feed_handle> structure for "Libtorrent"
 
-module Libtorrent.Rss (FeedHandle
-                      , FeedStatus
-                      , FeedSettings
-                      , FeedItem
-                      , unFeedHandle
-                      , unFeedStatus
-                      , unFeedSettings
-                      , unFeedItem
+module Libtorrent.Rss (FeedHandle(..)
+                      , FeedStatus(..)
+                      , FeedSettings(..)
+                      , FeedItem(..)
+                      , newFeedSettings
                       , updateFeed
                       , getFeedStatus
                       , setFeedSettings
@@ -49,6 +46,7 @@ module Libtorrent.Rss (FeedHandle
                       , getFeedItemInfoHash
                       ) where
 
+import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Data.Text (Text)
 import qualified Data.Text.Foreign as TF
 import           Foreign.C.Types (CInt)
@@ -116,177 +114,181 @@ instance FromPtr FeedSettings where
 instance WithPtr FeedSettings where
   withPtr (FeedSettings fptr) = withForeignPtr fptr
 
-updateFeed :: FeedHandle -> IO ()
+newFeedSettings :: MonadIO m =>  m FeedSettings
+newFeedSettings =
+  liftIO $ fromPtr [CU.exp| feed_settings * { new feed_settings() } |]
+
+updateFeed :: MonadIO m =>  FeedHandle -> m ()
 updateFeed ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(feed_handle * hoPtr)->update_feed() } |]
 
-getFeedStatus :: FeedHandle -> IO FeedStatus
+getFeedStatus :: MonadIO m =>  FeedHandle -> m FeedStatus
 getFeedStatus ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   fromPtr [CU.exp| feed_status * { new feed_status($(feed_handle * hoPtr)->get_feed_status()) } |]
 
-setFeedSettings :: FeedHandle -> FeedSettings -> IO ()
+setFeedSettings :: MonadIO m =>  FeedHandle -> FeedSettings -> m ()
 setFeedSettings ho fs =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   withPtr fs $ \fsPtr ->
   [CU.exp| void { $(feed_handle * hoPtr)->set_settings(*$(feed_settings * fsPtr)) } |]
 
 -- Feed status
-getFeedStatusUrl :: FeedStatus -> IO Text
+getFeedStatusUrl :: MonadIO m =>  FeedStatus -> m Text
 getFeedStatusUrl ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   res <- fromPtr [CU.exp| string * { new std::string($(feed_status * hoPtr)->url) } |]
   stdStringToText res
 
-getFeedStatusTitle :: FeedStatus -> IO Text
+getFeedStatusTitle :: MonadIO m =>  FeedStatus -> m Text
 getFeedStatusTitle ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   res <- fromPtr [CU.exp| string * { new std::string($(feed_status * hoPtr)->title) } |]
   stdStringToText res
 
-getFeedStatusDescription :: FeedStatus -> IO Text
+getFeedStatusDescription :: MonadIO m =>  FeedStatus -> m Text
 getFeedStatusDescription ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   res <- fromPtr [CU.exp| string * { new std::string($(feed_status * hoPtr)->description) } |]
   stdStringToText res
 
-getFeedStatusLastUpdate :: FeedStatus -> IO C.CTime
+getFeedStatusLastUpdate :: MonadIO m =>  FeedStatus -> m C.CTime
 getFeedStatusLastUpdate ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| time_t { $(feed_status * hoPtr)->last_update } |]
 
-getFeedStatusNextUpdate :: FeedStatus -> IO CInt
+getFeedStatusNextUpdate :: MonadIO m =>  FeedStatus -> m CInt
 getFeedStatusNextUpdate ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(feed_status * hoPtr)->next_update } |]
 
-getFeedStatusUpdating :: FeedStatus -> IO Bool
+getFeedStatusUpdating :: MonadIO m =>  FeedStatus -> m Bool
 getFeedStatusUpdating ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toBool <$> [CU.exp| bool { $(feed_status * hoPtr)->updating } |]
 
-getFeedStatusItems :: FeedStatus -> IO (StdVector FeedItem)
+getFeedStatusItems :: MonadIO m =>  FeedStatus -> m (StdVector FeedItem)
 getFeedStatusItems fs =
-  withPtr fs $ \fsPtr -> do
+  liftIO . withPtr fs $ \fsPtr -> do
   fromPtr [CU.exp| VectorFeedItem * { new VectorFeedItem($(feed_status * fsPtr)->items) } |]
 
-getFeedStatusError :: FeedStatus -> IO ErrorCode
+getFeedStatusError :: MonadIO m =>  FeedStatus -> m ErrorCode
 getFeedStatusError ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   fromPtr [CU.exp| error_code * { new error_code($(feed_status * hoPtr)->error) } |]
 
-getFeedStatusTtl :: FeedStatus -> IO CInt
+getFeedStatusTtl :: MonadIO m =>  FeedStatus -> m CInt
 getFeedStatusTtl ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(feed_status * hoPtr)->ttl } |]
 
 -- Feed settings
 
-getFeedSettingsUrl :: FeedSettings -> IO Text
+getFeedSettingsUrl :: MonadIO m =>  FeedSettings -> m Text
 getFeedSettingsUrl ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   res <- fromPtr [CU.exp| string * { new std::string($(feed_settings * hoPtr)->url) } |]
   stdStringToText res
 
-setFeedSettingsUrl :: FeedSettings -> Text -> IO ()
-setFeedSettingsUrl ho val = do
+setFeedSettingsUrl :: MonadIO m =>  FeedSettings -> Text -> m ()
+setFeedSettingsUrl ho val = liftIO $ do
   TF.withCStringLen val $ \(cstr, len) -> do
     let clen = fromIntegral len
     withPtr ho $ \hoPtr ->
       [CU.exp| void { $(feed_settings * hoPtr)->url = std::string($(const char * cstr), $(size_t clen))} |]
 
-getFeedSettingsAutoDownload :: FeedSettings -> IO Bool
+getFeedSettingsAutoDownload :: MonadIO m =>  FeedSettings -> m Bool
 getFeedSettingsAutoDownload ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toBool <$> [CU.exp| bool { $(feed_settings * hoPtr)->auto_download } |]
 
-setFeedSettingsAutoDownload :: FeedSettings -> Bool -> IO ()
+setFeedSettingsAutoDownload :: MonadIO m =>  FeedSettings -> Bool -> m ()
 setFeedSettingsAutoDownload ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(feed_settings * hoPtr)->auto_download = $(bool val')} |]
 
-getFeedSettingsAutoMapHandles :: FeedSettings -> IO Bool
+getFeedSettingsAutoMapHandles :: MonadIO m =>  FeedSettings -> m Bool
 getFeedSettingsAutoMapHandles ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toBool <$> [CU.exp| bool { $(feed_settings * hoPtr)->auto_map_handles } |]
 
-setFeedSettingsAutoMapHandles :: FeedSettings -> Bool -> IO ()
+setFeedSettingsAutoMapHandles :: MonadIO m =>  FeedSettings -> Bool -> m ()
 setFeedSettingsAutoMapHandles ho val =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(feed_settings * hoPtr)->auto_map_handles = $(bool val')} |]
 
-getFeedSettingsDefaultTtl :: FeedSettings -> IO CInt
+getFeedSettingsDefaultTtl :: MonadIO m =>  FeedSettings -> m CInt
 getFeedSettingsDefaultTtl ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(feed_settings * hoPtr)->default_ttl } |]
 
-setFeedSettingsDefaultTtl :: FeedSettings -> CInt -> IO ()
+setFeedSettingsDefaultTtl :: MonadIO m =>  FeedSettings -> CInt -> m ()
 setFeedSettingsDefaultTtl ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(feed_settings * hoPtr)->default_ttl = $(int val)} |]
 
-getFeedSettingsAddArgs :: FeedSettings -> IO AddTorrentParams
+getFeedSettingsAddArgs :: MonadIO m =>  FeedSettings -> m AddTorrentParams
 getFeedSettingsAddArgs ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   fromPtr [CU.exp| add_torrent_params * { new add_torrent_params($(feed_settings * hoPtr)->add_args) } |]
 
-setFeedSettingsAddArgs :: FeedSettings -> AddTorrentParams -> IO ()
+setFeedSettingsAddArgs :: MonadIO m =>  FeedSettings -> AddTorrentParams -> m ()
 setFeedSettingsAddArgs ho val =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   withPtr val $ \valPtr ->
   [CU.exp| void { $(feed_settings * hoPtr)->add_args = *$(add_torrent_params * valPtr)} |]
 
 -- Feed item
-getFeedItemUrl :: FeedItem -> IO Text
+getFeedItemUrl :: MonadIO m =>  FeedItem -> m Text
 getFeedItemUrl ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   res <- fromPtr [CU.exp| string * { new std::string($(feed_item * hoPtr)->url) } |]
   stdStringToText res
 
-getFeedItemUuid :: FeedItem -> IO Text
+getFeedItemUuid :: MonadIO m =>  FeedItem -> m Text
 getFeedItemUuid ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   res <- fromPtr [CU.exp| string * { new std::string($(feed_item * hoPtr)->uuid) } |]
   stdStringToText res
 
-getFeedItemTitle :: FeedItem -> IO Text
+getFeedItemTitle :: MonadIO m =>  FeedItem -> m Text
 getFeedItemTitle ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   res <- fromPtr [CU.exp| string * { new std::string($(feed_item * hoPtr)->title) } |]
   stdStringToText res
 
-getFeedItemDescription :: FeedItem -> IO Text
+getFeedItemDescription :: MonadIO m =>  FeedItem -> m Text
 getFeedItemDescription ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   res <- fromPtr [CU.exp| string * { new std::string($(feed_item * hoPtr)->description) } |]
   stdStringToText res
 
-getFeedItemComment :: FeedItem -> IO Text
+getFeedItemComment :: MonadIO m =>  FeedItem -> m Text
 getFeedItemComment ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   res <- fromPtr [CU.exp| string * { new std::string($(feed_item * hoPtr)->comment) } |]
   stdStringToText res
 
-getFeedItemCategory :: FeedItem -> IO Text
+getFeedItemCategory :: MonadIO m =>  FeedItem -> m Text
 getFeedItemCategory ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   res <- fromPtr [CU.exp| string * { new std::string($(feed_item * hoPtr)->category) } |]
   stdStringToText res
 
-getFeedItemSize :: FeedItem -> IO C.CSize
+getFeedItemSize :: MonadIO m =>  FeedItem -> m C.CSize
 getFeedItemSize ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| size_t { $(feed_item * hoPtr)->size } |]
 
-getFeedItemHandle :: FeedItem -> IO TorrentHandle
+getFeedItemHandle :: MonadIO m =>  FeedItem -> m TorrentHandle
 getFeedItemHandle ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   fromPtr [CU.exp| torrent_handle * { new torrent_handle($(feed_item * hoPtr)->handle) } |]
 
-getFeedItemInfoHash :: FeedItem -> IO Sha1Hash
+getFeedItemInfoHash :: MonadIO m =>  FeedItem -> m Sha1Hash
 getFeedItemInfoHash ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   fromPtr [CU.exp| sha1_hash * { new sha1_hash($(feed_item * hoPtr)->info_hash) } |]

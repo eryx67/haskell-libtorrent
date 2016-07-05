@@ -14,10 +14,10 @@ module Libtorrent.TorrentInfo.AnnounceEntry( TrackerSource(..)
                                            , canAnnounce
                                            , isWorking
                                            , trim
-                                           , getUrl
-                                           , setUrl
-                                           , getTrackerid
-                                           , setTrackerid
+                                           , getAnnounceEntryUrl
+                                           , setAnnounceEntryUrl
+                                           , getAnnounceEntryTrackerid
+                                           , setAnnounceEntryTrackerid
                                            , getMessage
                                            , setMessage
                                            , getLastError
@@ -37,11 +37,13 @@ module Libtorrent.TorrentInfo.AnnounceEntry( TrackerSource(..)
                                            , getSendStats
                                            ) where
 
+import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Data.Text (Text)
 import qualified Data.Text.Foreign as TF
 import           Data.Word (Word64, Word8)
 import           Foreign.C.Types (CInt)
 import           Foreign.ForeignPtr ( ForeignPtr, withForeignPtr )
+import           Foreign.Marshal.Utils (toBool)
 import qualified Language.C.Inline as C
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Unsafe as CU
@@ -65,7 +67,7 @@ data TrackerSource =
   | SourceClient
   | SourceMagnetLink
   | SourceTex
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 newtype AnnounceEntry = AnnounceEntry { unAnnounceEntry :: ForeignPtr (CType AnnounceEntry)}
 
@@ -83,158 +85,158 @@ instance WithPtr AnnounceEntry where
   withPtr (AnnounceEntry fptr) = withForeignPtr fptr
 
 
-newAnnounceEntry :: Text -> IO AnnounceEntry
-newAnnounceEntry url = do
+newAnnounceEntry :: MonadIO m =>  Text -> m AnnounceEntry
+newAnnounceEntry url = liftIO $ do
   s <- textToStdString url
   withPtr s $ \sPtr ->
     fromPtr [CU.exp| announce_entry * { new announce_entry(*$(string * sPtr)) } |]
 
-nextAnnounceIn :: AnnounceEntry -> IO CInt
+nextAnnounceIn :: MonadIO m =>  AnnounceEntry -> m CInt
 nextAnnounceIn ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(announce_entry * hoPtr)->next_announce_in() } |]
 
-minAnnounceIn :: AnnounceEntry -> IO CInt
+minAnnounceIn :: MonadIO m =>  AnnounceEntry -> m CInt
 minAnnounceIn ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(announce_entry * hoPtr)->min_announce_in() } |]
 
-reset :: AnnounceEntry -> IO ()
+reset :: MonadIO m =>  AnnounceEntry -> m ()
 reset ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(announce_entry * hoPtr)->reset() } |]
 
 -- void failed (aux::session_settings const& sett, int retry_interval = 0);
 
-canAnnounce :: AnnounceEntry -> Word64 -> Bool -> IO Bool
+canAnnounce :: MonadIO m =>  AnnounceEntry -> Word64 -> Bool -> m Bool
 canAnnounce ho now isSeed =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   let isSeed' = if isSeed then 1 else 0
   res <- [CU.exp| bool { $(announce_entry * hoPtr)->can_announce(ptime($(uint64_t now)), $(bool isSeed')) } |]
   return $ res > 0
 
-isWorking :: AnnounceEntry -> IO Bool
+isWorking :: MonadIO m =>  AnnounceEntry -> m Bool
 isWorking ho =
-  withPtr ho $ \hoPtr ->
-  (> 0) <$> [CU.exp| bool { $(announce_entry * hoPtr)->is_working() } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  toBool <$> [CU.exp| bool { $(announce_entry * hoPtr)->is_working() } |]
 
-trim :: AnnounceEntry -> IO ()
+trim :: MonadIO m =>  AnnounceEntry -> m ()
 trim ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(announce_entry * hoPtr)->trim() } |]
 
-getUrl :: AnnounceEntry -> IO Text
-getUrl ho =
-  withPtr ho $ \hoPtr -> do
+getAnnounceEntryUrl :: MonadIO m =>  AnnounceEntry -> m Text
+getAnnounceEntryUrl ho =
+  liftIO . withPtr ho $ \hoPtr -> do
   res <- fromPtr [CU.exp| string * { new std::string($(announce_entry * hoPtr)->url) } |]
   stdStringToText res
 
-setUrl :: AnnounceEntry -> Text -> IO ()
-setUrl ho val =
-  TF.withCStringLen val $ \(cstr, len) -> do
+setAnnounceEntryUrl :: MonadIO m =>  AnnounceEntry -> Text -> m ()
+setAnnounceEntryUrl ho val =
+  liftIO . TF.withCStringLen val $ \(cstr, len) -> do
   let clen = fromIntegral len
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
     [CU.exp| void { $(announce_entry * hoPtr)->url = std::string($(const char * cstr), $(size_t clen))} |]
 
-getTrackerid :: AnnounceEntry -> IO Text
-getTrackerid ho =
-  withPtr ho $ \hoPtr -> do
+getAnnounceEntryTrackerid :: MonadIO m =>  AnnounceEntry -> m Text
+getAnnounceEntryTrackerid ho =
+  liftIO . withPtr ho $ \hoPtr -> do
   res <- fromPtr [CU.exp| string * { new std::string($(announce_entry * hoPtr)->trackerid) } |]
   stdStringToText res
 
-setTrackerid :: AnnounceEntry -> Text -> IO ()
-setTrackerid ho val =
-  TF.withCStringLen val $ \(cstr, len) -> do
+setAnnounceEntryTrackerid :: MonadIO m =>  AnnounceEntry -> Text -> m ()
+setAnnounceEntryTrackerid ho val =
+  liftIO . TF.withCStringLen val $ \(cstr, len) -> do
   let clen = fromIntegral len
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
     [CU.exp| void { $(announce_entry * hoPtr)->trackerid = std::string($(const char * cstr), $(size_t clen))} |]
 
-getMessage :: AnnounceEntry -> IO Text
+getMessage :: MonadIO m =>  AnnounceEntry -> m Text
 getMessage ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   res <- fromPtr [CU.exp| string * { new std::string($(announce_entry * hoPtr)->message) } |]
   stdStringToText res
 
-setMessage :: AnnounceEntry -> Text -> IO ()
+setMessage :: MonadIO m =>  AnnounceEntry -> Text -> m ()
 setMessage ho val =
-  TF.withCStringLen val $ \(cstr, len) -> do
+  liftIO . TF.withCStringLen val $ \(cstr, len) -> do
   let clen = fromIntegral len
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
     [CU.exp| void { $(announce_entry * hoPtr)->message = std::string($(const char * cstr), $(size_t clen))} |]
 
-getLastError :: AnnounceEntry -> IO ErrorCode
+getLastError :: MonadIO m =>  AnnounceEntry -> m ErrorCode
 getLastError ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   fromPtr [CU.exp| error_code * { new error_code($(announce_entry * hoPtr)->last_error) } |]
 
-getAnnounceEntryNextAnnounce :: AnnounceEntry -> IO Word64
+getAnnounceEntryNextAnnounce :: MonadIO m =>  AnnounceEntry -> m Word64
 getAnnounceEntryNextAnnounce ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| uint64_t { $(announce_entry * hoPtr)->next_announce.time } |]
 
-getMinAnnounce :: AnnounceEntry -> IO Word64
+getMinAnnounce :: MonadIO m =>  AnnounceEntry -> m Word64
 getMinAnnounce ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| uint64_t { $(announce_entry * hoPtr)->min_announce.time } |]
 
-getScrapeIncomplete :: AnnounceEntry -> IO CInt
+getScrapeIncomplete :: MonadIO m =>  AnnounceEntry -> m CInt
 getScrapeIncomplete ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(announce_entry * hoPtr)->scrape_incomplete } |]
 
-getScrapeComplete :: AnnounceEntry -> IO CInt
+getScrapeComplete :: MonadIO m =>  AnnounceEntry -> m CInt
 getScrapeComplete ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(announce_entry * hoPtr)->scrape_complete } |]
 
-getScrapeDownloaded :: AnnounceEntry -> IO CInt
+getScrapeDownloaded :: MonadIO m =>  AnnounceEntry -> m CInt
 getScrapeDownloaded ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(announce_entry * hoPtr)->scrape_downloaded } |]
 
-getTier :: AnnounceEntry -> IO Word8
+getTier :: MonadIO m =>  AnnounceEntry -> m Word8
 getTier ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| uint8_t { $(announce_entry * hoPtr)->tier } |]
 
-getFailLimit :: AnnounceEntry -> IO Word8
+getFailLimit :: MonadIO m =>  AnnounceEntry -> m Word8
 getFailLimit ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| uint8_t { $(announce_entry * hoPtr)->fail_limit } |]
 
-getFails :: AnnounceEntry -> IO Word8
+getFails :: MonadIO m =>  AnnounceEntry -> m Word8
 getFails ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| uint8_t { $(announce_entry * hoPtr)->fails } |]
 
-getUpdating :: AnnounceEntry -> IO Bool
+getUpdating :: MonadIO m =>  AnnounceEntry -> m Bool
 getUpdating ho =
-  withPtr ho $ \hoPtr ->
-  (> 0) <$> [CU.exp| bool { $(announce_entry * hoPtr)->updating } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  toBool <$> [CU.exp| bool { $(announce_entry * hoPtr)->updating } |]
 
-getSource :: AnnounceEntry -> IO (BitFlags TrackerSource)
+getSource :: MonadIO m =>  AnnounceEntry -> m (BitFlags TrackerSource)
 getSource ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toEnum . fromIntegral <$> [CU.exp| int { $(announce_entry * hoPtr)->source } |]
 
-getVerified :: AnnounceEntry -> IO Bool
+getVerified :: MonadIO m =>  AnnounceEntry -> m Bool
 getVerified ho =
-  withPtr ho $ \hoPtr ->
-  (> 0) <$> [CU.exp| bool { $(announce_entry * hoPtr)->verified } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  toBool <$> [CU.exp| bool { $(announce_entry * hoPtr)->verified } |]
 
-getStartSent :: AnnounceEntry -> IO Bool
+getStartSent :: MonadIO m =>  AnnounceEntry -> m Bool
 getStartSent ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   (> 0 ) <$> [CU.exp| bool { $(announce_entry * hoPtr)->start_sent } |]
 
-getCompleteSent :: AnnounceEntry -> IO Bool
+getCompleteSent :: MonadIO m =>  AnnounceEntry -> m Bool
 getCompleteSent ho =
-  withPtr ho $ \hoPtr ->
-  (> 0) <$> [CU.exp| bool { $(announce_entry * hoPtr)->complete_sent } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  toBool <$> [CU.exp| bool { $(announce_entry * hoPtr)->complete_sent } |]
 
-getSendStats :: AnnounceEntry -> IO Bool
+getSendStats :: MonadIO m =>  AnnounceEntry -> m Bool
 getSendStats ho =
-  withPtr ho $ \hoPtr ->
-  (> 0) <$> [CU.exp| bool { $(announce_entry * hoPtr)->send_stats } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  toBool <$> [CU.exp| bool { $(announce_entry * hoPtr)->send_stats } |]
 
 

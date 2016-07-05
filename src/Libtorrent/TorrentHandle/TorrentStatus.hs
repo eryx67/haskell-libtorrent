@@ -76,15 +76,17 @@ module Libtorrent.TorrentHandle.TorrentStatus (TorrentState(..)
                                               , getHasIncoming
                                               , getSeedMode
                                               , getMovingStorage
-                                              , getInfoHash
+                                              , getTorrentStatusInfoHash
                                               ) where
 
 
+import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Data.Array.BitArray (BitArray)
 import           Data.Int (Int64)
 import           Data.Text (Text)
 import           Foreign.C.Types (CInt)
 import           Foreign.ForeignPtr ( ForeignPtr, withForeignPtr )
+import           Foreign.Marshal.Utils (toBool)
 import qualified Language.C.Inline as C
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Unsafe as CU
@@ -114,7 +116,7 @@ data TorrentState =
   | Seeding
   | Allocating
   | CheckingResumeData
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 newtype TorrentStatus = TorrentStatus { unTorrentStatus :: ForeignPtr (CType TorrentStatus)}
 
@@ -131,386 +133,386 @@ instance FromPtr TorrentStatus where
 instance WithPtr TorrentStatus where
   withPtr (TorrentStatus fptr) = withForeignPtr fptr
 
-getError :: TorrentStatus -> IO Text
+getError :: MonadIO m =>  TorrentStatus -> m Text
 getError ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   res <- fromPtr [CU.exp| string * { new std::string($(torrent_status * hoPtr)->error) } |]
   stdStringToText res
 
-getSavePath :: TorrentStatus -> IO Text
+getSavePath :: MonadIO m =>  TorrentStatus -> m Text
 getSavePath ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   res <- fromPtr [CU.exp| string * { new std::string($(torrent_status * hoPtr)->save_path) } |]
   stdStringToText res
 
-getName :: TorrentStatus -> IO Text
+getName :: MonadIO m =>  TorrentStatus -> m Text
 getName ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   res <- fromPtr [CU.exp| string * { new std::string($(torrent_status * hoPtr)->name) } |]
   stdStringToText res
 
-getTorrentStatusNextAnnounce :: TorrentStatus -> IO C.CLong
+getTorrentStatusNextAnnounce :: MonadIO m =>  TorrentStatus -> m C.CLong
 getTorrentStatusNextAnnounce ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| long { $(torrent_status * hoPtr)->next_announce.total_seconds() } |]
 
-getCurrentTracker :: TorrentStatus -> IO Text
+getCurrentTracker :: MonadIO m =>  TorrentStatus -> m Text
 getCurrentTracker ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   res <- fromPtr [CU.exp| string * { new std::string($(torrent_status * hoPtr)->current_tracker) } |]
   stdStringToText res
 
-getTotalDownload :: TorrentStatus -> IO Int64
+getTotalDownload :: MonadIO m =>  TorrentStatus -> m Int64
 getTotalDownload ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int64_t { $(torrent_status * hoPtr)->total_download } |]
 
-getTotalUpload :: TorrentStatus -> IO Int64
+getTotalUpload :: MonadIO m =>  TorrentStatus -> m Int64
 getTotalUpload ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int64_t { $(torrent_status * hoPtr)->total_upload } |]
 
-getTotalPayloadDownload :: TorrentStatus -> IO Int64
+getTotalPayloadDownload :: MonadIO m =>  TorrentStatus -> m Int64
 getTotalPayloadDownload ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int64_t { $(torrent_status * hoPtr)->total_payload_download } |]
 
-getTotalPayloadUpload :: TorrentStatus -> IO Int64
+getTotalPayloadUpload :: MonadIO m =>  TorrentStatus -> m Int64
 getTotalPayloadUpload ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int64_t { $(torrent_status * hoPtr)->total_payload_upload } |]
 
-getTotalFailedBytes :: TorrentStatus -> IO Int64
+getTotalFailedBytes :: MonadIO m =>  TorrentStatus -> m Int64
 getTotalFailedBytes ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int64_t { $(torrent_status * hoPtr)->total_failed_bytes } |]
 
-getTotalRedundantBytes :: TorrentStatus -> IO Int64
+getTotalRedundantBytes :: MonadIO m =>  TorrentStatus -> m Int64
 getTotalRedundantBytes ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int64_t { $(torrent_status * hoPtr)->total_redundant_bytes } |]
 
-getPieces :: TorrentStatus -> IO (BitArray Int)
+getPieces :: MonadIO m =>  TorrentStatus -> m (BitArray Int)
 getPieces ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   bf <- fromPtr [CU.exp| bitfield * { new bitfield($(torrent_status * hoPtr)->pieces) } |]
   bitfieldToBitArray bf
 
-getVerifiedPieces :: TorrentStatus -> IO (BitArray Int)
+getVerifiedPieces :: MonadIO m =>  TorrentStatus -> m (BitArray Int)
 getVerifiedPieces ho =
-  withPtr ho $ \hoPtr -> do
+  liftIO . withPtr ho $ \hoPtr -> do
   bf <- fromPtr [CU.exp| bitfield * { new bitfield($(torrent_status * hoPtr)->verified_pieces) } |]
   bitfieldToBitArray bf
 
-getTotalDone :: TorrentStatus -> IO Int64
+getTotalDone :: MonadIO m =>  TorrentStatus -> m Int64
 getTotalDone ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int64_t { $(torrent_status * hoPtr)->total_done } |]
 
-getTotalWantedDone :: TorrentStatus -> IO Int64
+getTotalWantedDone :: MonadIO m =>  TorrentStatus -> m Int64
 getTotalWantedDone ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int64_t { $(torrent_status * hoPtr)->total_wanted_done } |]
 
-getTotalWanted :: TorrentStatus -> IO Int64
+getTotalWanted :: MonadIO m =>  TorrentStatus -> m Int64
 getTotalWanted ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int64_t { $(torrent_status * hoPtr)->total_wanted } |]
 
-getAllTimeUpload :: TorrentStatus -> IO Int64
+getAllTimeUpload :: MonadIO m =>  TorrentStatus -> m Int64
 getAllTimeUpload ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int64_t { $(torrent_status * hoPtr)->all_time_upload } |]
 
-getAllTimeDownload :: TorrentStatus -> IO Int64
+getAllTimeDownload :: MonadIO m =>  TorrentStatus -> m Int64
 getAllTimeDownload ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int64_t { $(torrent_status * hoPtr)->all_time_download } |]
 
-getAddedTime :: TorrentStatus -> IO C.CTime
+getAddedTime :: MonadIO m =>  TorrentStatus -> m C.CTime
 getAddedTime ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| time_t { $(torrent_status * hoPtr)->added_time } |]
 
-getCompletedTime :: TorrentStatus -> IO C.CTime
+getCompletedTime :: MonadIO m =>  TorrentStatus -> m C.CTime
 getCompletedTime ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| time_t { $(torrent_status * hoPtr)->completed_time } |]
 
-getLastSeenComplete :: TorrentStatus -> IO C.CTime
+getLastSeenComplete :: MonadIO m =>  TorrentStatus -> m C.CTime
 getLastSeenComplete ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| time_t { $(torrent_status * hoPtr)->last_seen_complete } |]
 
-getProgress :: TorrentStatus -> IO C.CFloat
+getProgress :: MonadIO m =>  TorrentStatus -> m C.CFloat
 getProgress ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| float { $(torrent_status * hoPtr)->progress } |]
 
-getProgressPpm :: TorrentStatus -> IO CInt
+getProgressPpm :: MonadIO m =>  TorrentStatus -> m CInt
 getProgressPpm ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->progress_ppm } |]
 
-getQueuePosition :: TorrentStatus -> IO CInt
+getQueuePosition :: MonadIO m =>  TorrentStatus -> m CInt
 getQueuePosition ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->queue_position } |]
 
-getDownloadRate :: TorrentStatus -> IO CInt
+getDownloadRate :: MonadIO m =>  TorrentStatus -> m CInt
 getDownloadRate ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->download_rate } |]
 
-getUploadRate :: TorrentStatus -> IO CInt
+getUploadRate :: MonadIO m =>  TorrentStatus -> m CInt
 getUploadRate ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(torrent_status * hoPtr)->upload_rate } |]
 
-getDownloadPayloadRate :: TorrentStatus -> IO CInt
+getDownloadPayloadRate :: MonadIO m =>  TorrentStatus -> m CInt
 getDownloadPayloadRate ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->download_payload_rate } |]
 
-getUploadPayloadRate :: TorrentStatus -> IO CInt
+getUploadPayloadRate :: MonadIO m =>  TorrentStatus -> m CInt
 getUploadPayloadRate ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->upload_payload_rate } |]
 
-getNumSeeds :: TorrentStatus -> IO CInt
+getNumSeeds :: MonadIO m =>  TorrentStatus -> m CInt
 getNumSeeds ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->num_seeds } |]
 
-getNumPeers :: TorrentStatus -> IO CInt
+getNumPeers :: MonadIO m =>  TorrentStatus -> m CInt
 getNumPeers ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(torrent_status * hoPtr)->num_peers } |]
 
-getNumComplete :: TorrentStatus -> IO CInt
+getNumComplete :: MonadIO m =>  TorrentStatus -> m CInt
 getNumComplete ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->num_complete } |]
 
-getNumIncomplete :: TorrentStatus -> IO CInt
+getNumIncomplete :: MonadIO m =>  TorrentStatus -> m CInt
 getNumIncomplete ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->num_incomplete } |]
 
-getListSeeds :: TorrentStatus -> IO CInt
+getListSeeds :: MonadIO m =>  TorrentStatus -> m CInt
 getListSeeds ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->list_seeds } |]
 
-getListPeers :: TorrentStatus -> IO CInt
+getListPeers :: MonadIO m =>  TorrentStatus -> m CInt
 getListPeers ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->list_peers } |]
 
-getConnectCandidates :: TorrentStatus -> IO CInt
+getConnectCandidates :: MonadIO m =>  TorrentStatus -> m CInt
 getConnectCandidates ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->connect_candidates } |]
 
-getNumPieces :: TorrentStatus -> IO CInt
+getNumPieces :: MonadIO m =>  TorrentStatus -> m CInt
 getNumPieces ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->num_pieces } |]
 
-getDistributedFullCopies :: TorrentStatus -> IO CInt
+getDistributedFullCopies :: MonadIO m =>  TorrentStatus -> m CInt
 getDistributedFullCopies ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->distributed_full_copies } |]
 
-getDistributedFraction :: TorrentStatus -> IO CInt
+getDistributedFraction :: MonadIO m =>  TorrentStatus -> m CInt
 getDistributedFraction ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->distributed_fraction } |]
 
-getDistributedCopies :: TorrentStatus -> IO C.CFloat
+getDistributedCopies :: MonadIO m =>  TorrentStatus -> m C.CFloat
 getDistributedCopies ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| float { $(torrent_status * hoPtr)->distributed_copies } |]
 
-getBlockSize :: TorrentStatus -> IO CInt
+getBlockSize :: MonadIO m =>  TorrentStatus -> m CInt
 getBlockSize ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->block_size } |]
 
-getNumUploads :: TorrentStatus -> IO CInt
+getNumUploads :: MonadIO m =>  TorrentStatus -> m CInt
 getNumUploads ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->num_uploads } |]
 
-getNumConnections :: TorrentStatus -> IO CInt
+getNumConnections :: MonadIO m =>  TorrentStatus -> m CInt
 getNumConnections ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->num_connections } |]
 
-getUploadsLimit :: TorrentStatus -> IO CInt
+getUploadsLimit :: MonadIO m =>  TorrentStatus -> m CInt
 getUploadsLimit ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->uploads_limit } |]
 
-getConnectionsLimit :: TorrentStatus -> IO CInt
+getConnectionsLimit :: MonadIO m =>  TorrentStatus -> m CInt
 getConnectionsLimit ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->connections_limit } |]
 
-getUpBandwidthQueue :: TorrentStatus -> IO CInt
+getUpBandwidthQueue :: MonadIO m =>  TorrentStatus -> m CInt
 getUpBandwidthQueue ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->up_bandwidth_queue } |]
 
-getDownBandwidthQueue :: TorrentStatus -> IO CInt
+getDownBandwidthQueue :: MonadIO m =>  TorrentStatus -> m CInt
 getDownBandwidthQueue ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->down_bandwidth_queue } |]
 
-getTimeSinceUpload :: TorrentStatus -> IO CInt
+getTimeSinceUpload :: MonadIO m =>  TorrentStatus -> m CInt
 getTimeSinceUpload ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->time_since_upload } |]
 
-getTimeSinceDownload :: TorrentStatus -> IO CInt
+getTimeSinceDownload :: MonadIO m =>  TorrentStatus -> m CInt
 getTimeSinceDownload ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->time_since_download } |]
 
-getActiveTime :: TorrentStatus -> IO CInt
+getActiveTime :: MonadIO m =>  TorrentStatus -> m CInt
 getActiveTime ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->active_time } |]
 
-getFinishedTime :: TorrentStatus -> IO CInt
+getFinishedTime :: MonadIO m =>  TorrentStatus -> m CInt
 getFinishedTime ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->finished_time } |]
 
-getSeedingTime :: TorrentStatus -> IO CInt
+getSeedingTime :: MonadIO m =>  TorrentStatus -> m CInt
 getSeedingTime ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->seeding_time } |]
 
-getSeedRank :: TorrentStatus -> IO CInt
+getSeedRank :: MonadIO m =>  TorrentStatus -> m CInt
 getSeedRank ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->seed_rank } |]
 
-getLastScrape :: TorrentStatus -> IO CInt
+getLastScrape :: MonadIO m =>  TorrentStatus -> m CInt
 getLastScrape ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->last_scrape } |]
 
-getPriority :: TorrentStatus -> IO CInt
+getPriority :: MonadIO m =>  TorrentStatus -> m CInt
 getPriority ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(torrent_status * hoPtr)->priority } |]
 
-getState :: TorrentStatus -> IO TorrentState
+getState :: MonadIO m =>  TorrentStatus -> m TorrentState
 getState ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   toEnum . fromIntegral <$> [CU.exp| int { $(torrent_status * hoPtr)->state } |]
 
-getNeedSaveResume :: TorrentStatus -> IO Bool
+getNeedSaveResume :: MonadIO m =>  TorrentStatus -> m Bool
 getNeedSaveResume ho =
-  withPtr ho $ \hoPtr ->
-  ( > 0) <$> [CU.exp| bool { $(torrent_status * hoPtr)->need_save_resume } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  toBool <$> [CU.exp| bool { $(torrent_status * hoPtr)->need_save_resume } |]
 
-getIpFilterApplies :: TorrentStatus -> IO Bool
+getIpFilterApplies :: MonadIO m =>  TorrentStatus -> m Bool
 getIpFilterApplies ho =
-  withPtr ho $ \hoPtr ->
-  ( > 0) <$> [CU.exp| bool { $(torrent_status * hoPtr)->ip_filter_applies } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  toBool <$> [CU.exp| bool { $(torrent_status * hoPtr)->ip_filter_applies } |]
 
-getUploadMode :: TorrentStatus -> IO Bool
+getUploadMode :: MonadIO m =>  TorrentStatus -> m Bool
 getUploadMode ho =
-  withPtr ho $ \hoPtr ->
-  ( > 0) <$> [CU.exp| bool { $(torrent_status * hoPtr)->upload_mode } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  toBool <$> [CU.exp| bool { $(torrent_status * hoPtr)->upload_mode } |]
 
-getShareMode :: TorrentStatus -> IO Bool
+getShareMode :: MonadIO m =>  TorrentStatus -> m Bool
 getShareMode ho =
-  withPtr ho $ \hoPtr ->
-  ( > 0) <$> [CU.exp| bool { $(torrent_status * hoPtr)->share_mode } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  toBool <$> [CU.exp| bool { $(torrent_status * hoPtr)->share_mode } |]
 
-getSuperSeeding :: TorrentStatus -> IO Bool
+getSuperSeeding :: MonadIO m =>  TorrentStatus -> m Bool
 getSuperSeeding ho =
-  withPtr ho $ \hoPtr ->
-  ( > 0) <$> [CU.exp| bool { $(torrent_status * hoPtr)->super_seeding } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  toBool <$> [CU.exp| bool { $(torrent_status * hoPtr)->super_seeding } |]
 
-getPaused :: TorrentStatus -> IO Bool
+getPaused :: MonadIO m =>  TorrentStatus -> m Bool
 getPaused ho =
-  withPtr ho $ \hoPtr ->
-  ( > 0) <$> [CU.exp| bool { $(torrent_status * hoPtr)->paused } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  toBool <$> [CU.exp| bool { $(torrent_status * hoPtr)->paused } |]
 
-getAutoManaged :: TorrentStatus -> IO Bool
+getAutoManaged :: MonadIO m =>  TorrentStatus -> m Bool
 getAutoManaged ho =
-  withPtr ho $ \hoPtr ->
-  ( > 0) <$> [CU.exp| bool { $(torrent_status * hoPtr)->auto_managed } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  toBool <$> [CU.exp| bool { $(torrent_status * hoPtr)->auto_managed } |]
 
-getSequentialDownload :: TorrentStatus -> IO Bool
+getSequentialDownload :: MonadIO m =>  TorrentStatus -> m Bool
 getSequentialDownload ho =
-  withPtr ho $ \hoPtr ->
-  ( > 0) <$> [CU.exp| bool { $(torrent_status * hoPtr)->sequential_download } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  toBool <$> [CU.exp| bool { $(torrent_status * hoPtr)->sequential_download } |]
 
-getIsSeeding :: TorrentStatus -> IO Bool
+getIsSeeding :: MonadIO m =>  TorrentStatus -> m Bool
 getIsSeeding ho =
-  withPtr ho $ \hoPtr ->
-  ( > 0) <$> [CU.exp| bool { $(torrent_status * hoPtr)->is_seeding } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  toBool <$> [CU.exp| bool { $(torrent_status * hoPtr)->is_seeding } |]
 
-getIsFinished :: TorrentStatus -> IO Bool
+getIsFinished :: MonadIO m =>  TorrentStatus -> m Bool
 getIsFinished ho =
-  withPtr ho $ \hoPtr ->
-  ( > 0) <$> [CU.exp| bool { $(torrent_status * hoPtr)->is_finished } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  toBool <$> [CU.exp| bool { $(torrent_status * hoPtr)->is_finished } |]
 
-getHasMetadata :: TorrentStatus -> IO Bool
+getHasMetadata :: MonadIO m =>  TorrentStatus -> m Bool
 getHasMetadata ho =
-  withPtr ho $ \hoPtr ->
-  ( > 0) <$> [CU.exp| bool { $(torrent_status * hoPtr)->has_metadata } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  toBool <$> [CU.exp| bool { $(torrent_status * hoPtr)->has_metadata } |]
 
-getHasIncoming :: TorrentStatus -> IO Bool
+getHasIncoming :: MonadIO m =>  TorrentStatus -> m Bool
 getHasIncoming ho =
-  withPtr ho $ \hoPtr ->
-  ( > 0) <$> [CU.exp| bool { $(torrent_status * hoPtr)->has_incoming } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  toBool <$> [CU.exp| bool { $(torrent_status * hoPtr)->has_incoming } |]
 
-getSeedMode :: TorrentStatus -> IO Bool
+getSeedMode :: MonadIO m =>  TorrentStatus -> m Bool
 getSeedMode ho =
-  withPtr ho $ \hoPtr ->
-  ( > 0) <$> [CU.exp| bool { $(torrent_status * hoPtr)->seed_mode } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  toBool <$> [CU.exp| bool { $(torrent_status * hoPtr)->seed_mode } |]
 
-getMovingStorage :: TorrentStatus -> IO Bool
+getMovingStorage :: MonadIO m =>  TorrentStatus -> m Bool
 getMovingStorage ho =
-  withPtr ho $ \hoPtr ->
-  ( > 0) <$> [CU.exp| bool { $(torrent_status * hoPtr)->moving_storage } |]
+  liftIO . withPtr ho $ \hoPtr ->
+  toBool <$> [CU.exp| bool { $(torrent_status * hoPtr)->moving_storage } |]
 
 -- TODO: Will be available in libtorrent 1.1.0
--- getIsLoaded :: TorrentStatus -> IO Bool
+-- getIsLoaded :: MonadIO m =>  TorrentStatus -> m Bool
 -- getIsLoaded ho =
---   withPtr ho $ \hoPtr ->
---   ( > 0) <$> [CU.exp| bool { $(torrent_status * hoPtr)->is_loaded } |]
+--   liftIO . withPtr ho $ \hoPtr ->
+--   toBool <$> [CU.exp| bool { $(torrent_status * hoPtr)->is_loaded } |]
 
--- getAnnouncingToTrackers :: TorrentStatus -> IO Bool
+-- getAnnouncingToTrackers :: MonadIO m =>  TorrentStatus -> m Bool
 -- getAnnouncingToTrackers ho =
---   withPtr ho $ \hoPtr ->
---   ( > 0) <$> [CU.exp| bool { $(torrent_status * hoPtr)->announcing_to_trackers } |]
+--   liftIO . withPtr ho $ \hoPtr ->
+--   toBool <$> [CU.exp| bool { $(torrent_status * hoPtr)->announcing_to_trackers } |]
 
--- getAnnouncingToLsd :: TorrentStatus -> IO Bool
+-- getAnnouncingToLsd :: MonadIO m =>  TorrentStatus -> m Bool
 -- getAnnouncingToLsd ho =
---   withPtr ho $ \hoPtr ->
---   ( > 0) <$> [CU.exp| bool { $(torrent_status * hoPtr)->announcing_to_lsd } |]
+--   liftIO . withPtr ho $ \hoPtr ->
+--   toBool <$> [CU.exp| bool { $(torrent_status * hoPtr)->announcing_to_lsd } |]
 
--- getAnnouncingToDht :: TorrentStatus -> IO Bool
+-- getAnnouncingToDht :: MonadIO m =>  TorrentStatus -> m Bool
 -- getAnnouncingToDht ho =
---   withPtr ho $ \hoPtr ->
---   ( > 0) <$> [CU.exp| bool { $(torrent_status * hoPtr)->announcing_to_dht } |]
+--   liftIO . withPtr ho $ \hoPtr ->
+--   toBool <$> [CU.exp| bool { $(torrent_status * hoPtr)->announcing_to_dht } |]
 
--- getStopWhenReady :: TorrentStatus -> IO Bool
+-- getStopWhenReady :: MonadIO m =>  TorrentStatus -> m Bool
 -- getStopWhenReady ho =
---   withPtr ho $ \hoPtr ->
---   ( > 0) <$> [CU.exp| bool { $(torrent_status * hoPtr)->stop_when_ready } |]
+--   liftIO . withPtr ho $ \hoPtr ->
+--   toBool <$> [CU.exp| bool { $(torrent_status * hoPtr)->stop_when_ready } |]
 
-getInfoHash :: TorrentStatus -> IO Sha1Hash
-getInfoHash ho =
-  withPtr ho $ \hoPtr ->
+getTorrentStatusInfoHash :: MonadIO m =>  TorrentStatus -> m Sha1Hash
+getTorrentStatusInfoHash ho =
+  liftIO . withPtr ho $ \hoPtr ->
   fromPtr [CU.exp| sha1_hash * { new sha1_hash($(torrent_status * hoPtr)->info_hash) } |]
 
 

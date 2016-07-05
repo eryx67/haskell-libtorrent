@@ -9,12 +9,12 @@ module Libtorrent.TorrentHandle.BlockInfo( BlockState(..)
                                          , getBytesProgress
                                          , getBlockInfoBlockSize
                                          , getBlockInfoNumPeers
-                                         , getBlockState
+                                         , getBlockInfoState
                                          ) where
 
+import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Foreign.C.Types (CInt)
 import           Foreign.ForeignPtr ( ForeignPtr, withForeignPtr )
-import           Foreign.Ptr ( nullPtr )
 import qualified Language.C.Inline as C
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Unsafe as CU
@@ -38,7 +38,7 @@ data BlockState =
   | BlockRequested
   | BlockWriting
   | BlockFinished
-  deriving (Show, Enum, Bounded)
+  deriving (Show, Enum, Bounded, Eq)
 
 newtype BlockInfo = BlockInfo { unBlockInfo :: ForeignPtr (CType BlockInfo)}
 
@@ -56,9 +56,9 @@ instance WithPtr BlockInfo where
   withPtr (BlockInfo fptr) = withForeignPtr fptr
 
 -- FIXME: get linking error, don't know why
--- getPeer :: BlockInfo -> IO (Text, C.CShort)
+-- getPeer :: MonadIO m =>  BlockInfo -> m (Text, C.CShort)
 -- getPeer ho =
---   withPtr ho $ \hoPtr -> do
+--   liftIO . withPtr ho $ \hoPtr -> do
 --   addr <- fromPtr [CU.block| string * {
 --                       tcp::endpoint ep = $(block_info * hoPtr)->peer();
 --                       return new std::string(ep.address().to_string());
@@ -71,22 +71,22 @@ instance WithPtr BlockInfo where
 --                   |]
 --   ( , port) <$> stdStringToText addr
 
-getBytesProgress :: BlockInfo -> IO CInt
+getBytesProgress :: MonadIO m =>  BlockInfo -> m CInt
 getBytesProgress ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(block_info * hoPtr)->bytes_progress } |]
 
-getBlockInfoBlockSize :: BlockInfo -> IO CInt
+getBlockInfoBlockSize :: MonadIO m =>  BlockInfo -> m CInt
 getBlockInfoBlockSize ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(block_info * hoPtr)->block_size } |]
 
-getBlockInfoNumPeers :: BlockInfo -> IO CInt
+getBlockInfoNumPeers :: MonadIO m =>  BlockInfo -> m CInt
 getBlockInfoNumPeers ho =
-  withPtr ho $ \hoPtr ->
+  liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| int { $(block_info * hoPtr)->num_peers } |]
 
-getBlockState :: BlockInfo -> IO BlockState
-getBlockState ho =
-  withPtr ho $ \hoPtr ->
+getBlockInfoState :: MonadIO m =>  BlockInfo -> m BlockState
+getBlockInfoState ho =
+  liftIO . withPtr ho $ \hoPtr ->
   toEnum . fromIntegral <$> [CU.exp| int { $(block_info * hoPtr)->state } |]

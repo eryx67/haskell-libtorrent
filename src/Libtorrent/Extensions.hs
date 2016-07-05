@@ -9,6 +9,7 @@ module Libtorrent.Extensions (utMetadataPlugin
                              , ltTrackersPlugin
                              ) where
 
+import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Foreign.Ptr ( Ptr )
 import qualified Language.C.Inline as C
 import qualified Language.C.Inline.Cpp as C
@@ -16,7 +17,6 @@ import qualified Language.C.Inline.Unsafe as CU
 
 
 import           Libtorrent.Inline
-import           Libtorrent.Internal
 
 
 C.context libtorrentCtx
@@ -36,19 +36,19 @@ C.using "namespace std"
 C.using "namespace libtorrent"
 
 
-utMetadataPlugin :: IO (Ptr C'TorrentPlugin)
+utMetadataPlugin :: MonadIO m => m (Ptr C'TorrentPlugin)
 utMetadataPlugin =
-  [CU.exp| TorrentPlugin * { &libtorrent::create_ut_metadata_plugin } |]
+  liftIO [CU.exp| TorrentPlugin * { &libtorrent::create_ut_metadata_plugin } |]
 
-utPexPlugin :: IO (Ptr C'TorrentPlugin)
+utPexPlugin :: MonadIO m => m (Ptr C'TorrentPlugin)
 utPexPlugin =
-  [CU.exp| TorrentPlugin * { &libtorrent::create_ut_pex_plugin } |]
+  liftIO [CU.exp| TorrentPlugin * { &libtorrent::create_ut_pex_plugin } |]
 
-smartBanPlugin :: IO (Ptr C'TorrentPlugin)
+smartBanPlugin :: MonadIO m => m (Ptr C'TorrentPlugin)
 smartBanPlugin =
-  [CU.exp| TorrentPlugin * { &libtorrent::create_smart_ban_plugin } |]
+  liftIO [CU.exp| TorrentPlugin * { &libtorrent::create_smart_ban_plugin } |]
 
-ltTrackersPlugin :: IO (Ptr C'TorrentPlugin)
+ltTrackersPlugin :: MonadIO m => m (Ptr C'TorrentPlugin)
 ltTrackersPlugin =
-  [CU.exp| TorrentPlugin * { &libtorrent::create_lt_trackers_plugin } |]
+  liftIO [CU.exp| TorrentPlugin * { &libtorrent::create_lt_trackers_plugin } |]
 
