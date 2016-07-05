@@ -92,7 +92,7 @@ getRequested ho =
 getBlocks :: MonadIO m =>  PartialPieceInfo -> m (StdVector BlockInfo)
 getBlocks ho =
   liftIO . withPtr ho $ \hoPtr ->
-  fromPtr [CU.block| VectorBlockInfo * {
+  fromPtr [C.block| VectorBlockInfo * {
               block_info *bs = $(partial_piece_info * hoPtr)->blocks;
               int bn = $(partial_piece_info * hoPtr)->blocks_in_piece;
               return new std::vector<block_info>(bs, bs + bn);

@@ -42,7 +42,7 @@ entryToBencoded ePtr =
   \bufPtr ->
     alloca $ \clenPtr ->
     alloca $ \cstrPtr -> do
-      [CU.block| void {
+      [C.block| void {
           bencode(std::back_inserter(*$(VectorChar * bufPtr)), *$(entry * ePtr));
           *$(size_t * clenPtr) = $(VectorChar * bufPtr)->size();
           *$(char ** cstrPtr) = $(VectorChar * bufPtr)->data();

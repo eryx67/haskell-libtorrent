@@ -135,6 +135,21 @@ executable libtorrent-client
                      , optparse-applicative
   default-language:    Haskell2010
 
+executable libtorrent-simple-client
+  hs-source-dirs:      examples
+  main-is:             SimpleClient.hs
+  ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
+  cc-options: -Wall -O2 -std=c++11
+  build-depends:       base
+                     , libtorrent
+                     , data-default
+                     , text
+                     , formatting
+                     , monad-loops
+                     , monad-control
+                     , optparse-applicative
+  default-language:    Haskell2010
+
 executable libtorrent-rss-reader
   hs-source-dirs:      examples
   main-is:             RssReader.hs
@@ -179,6 +194,7 @@ test-suite libtorrent-test
   build-depends:       base
                      , libtorrent
                      , hspec
+                     , async
   ghc-options:      -Wall -fwarn-incomplete-patterns -threaded -funbox-strict-fields -O2 -rtsopts
   cc-options: -Wall -O2 -std=c++11
   pkgconfig-depends: libtorrent-rasterbar

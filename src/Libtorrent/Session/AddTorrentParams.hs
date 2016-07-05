@@ -133,7 +133,7 @@ newAddTorrentParams ts = liftIO $ do
   where
     addTorrent (TorrentInfoSrc ti) atPtr =
       withPtr ti $ \tiPtr ->
-      [CU.block| void {
+      [C.block| void {
           boost::intrusive_ptr<torrent_info> tip(new torrent_info(*$(torrent_info * tiPtr)));
           $(add_torrent_params * atPtr)->ti = tip;
         }

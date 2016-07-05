@@ -247,7 +247,7 @@ import           Libtorrent.Internal
 import           Libtorrent.PeerRequest (PeerRequest)
 import           Libtorrent.Rss (FeedHandle, FeedItem)
 import           Libtorrent.Session.AddTorrentParams
-import           Libtorrent.Sha1Hash (Sha1Hash, sha1HashToByteString)
+import           Libtorrent.Sha1Hash (Sha1Hash)
 import           Libtorrent.String
 import           Libtorrent.TorrentHandle
 import           Libtorrent.TorrentHandle.TorrentStatus (TorrentStatus, TorrentState)
@@ -470,7 +470,7 @@ instance IsAlert TorrentAlert where
 getHandle :: MonadIO m => IsTorrentAlert ho => ho -> m TorrentHandle
 getHandle ho =
   liftIO . asTorrentAlert ho $ \hoPtr ->
-  fromPtr [CU.exp| torrent_handle * { new torrent_handle($(torrent_alert * hoPtr)->handle) } |]
+  fromPtr [C.exp| torrent_handle * { new torrent_handle($(torrent_alert * hoPtr)->handle) } |]
 
 newtype PeerAlert = PeerAlert { unPeerAlert :: Alert}
 
@@ -1054,7 +1054,7 @@ instance IsAlert InvalidRequestAlert where
 invalidRequestAlertRequest :: MonadIO m => InvalidRequestAlert -> m PeerRequest
 invalidRequestAlertRequest ho =
   liftIO . withPtr (SubAlert ho) $ \hoPtr ->
-  fromPtr [CU.exp| peer_request * { new peer_request($(invalid_request_alert * hoPtr)->request) } |]
+  fromPtr [C.exp| peer_request * { new peer_request($(invalid_request_alert * hoPtr)->request) } |]
 
 newtype TorrentFinishedAlert = TorrentFinishedAlert { unTorrentFinishedAlert :: Alert}
 
@@ -1284,11 +1284,10 @@ instance IsAlert TorrentDeletedAlert where
   fromAlert = TorrentDeletedAlert
   toAlert = unTorrentDeletedAlert
 
-torrentDeletedAlertInfoHash :: MonadIO m => TorrentDeletedAlert -> m ByteString
+torrentDeletedAlertInfoHash :: MonadIO m => TorrentDeletedAlert -> m Sha1Hash
 torrentDeletedAlertInfoHash ho =
-  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
-  ih <- fromPtr [CU.exp| sha1_hash * { new sha1_hash($(torrent_deleted_alert * hoPtr)->info_hash) } |]
-  sha1HashToByteString ih
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
+  fromPtr [CU.exp| sha1_hash * { new sha1_hash($(torrent_deleted_alert * hoPtr)->info_hash) } |]
 
 newtype TorrentDeleteFailedAlert = TorrentDeleteFailedAlert { unTorrentDeleteFailedAlert :: Alert}
 
@@ -1305,11 +1304,10 @@ instance IsAlert TorrentDeleteFailedAlert where
   fromAlert = TorrentDeleteFailedAlert
   toAlert = unTorrentDeleteFailedAlert
 
-torrentDeleteFailedAlertInfoHash :: MonadIO m => TorrentDeleteFailedAlert -> m ByteString
+torrentDeleteFailedAlertInfoHash :: MonadIO m => TorrentDeleteFailedAlert -> m Sha1Hash
 torrentDeleteFailedAlertInfoHash ho =
-  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
-  ih <- fromPtr [CU.exp| sha1_hash * { new sha1_hash($(torrent_delete_failed_alert * hoPtr)->info_hash) } |]
-  sha1HashToByteString ih
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
+  fromPtr [CU.exp| sha1_hash * { new sha1_hash($(torrent_delete_failed_alert * hoPtr)->info_hash) } |]
 
 torrentDeleteFailedAlertError :: MonadIO m => TorrentDeleteFailedAlert -> m ErrorCode
 torrentDeleteFailedAlertError ho =
@@ -1784,11 +1782,10 @@ dhtAnnounceAlertPort ho =
   liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| int { $(dht_announce_alert * hoPtr)->port } |]
 
-dhtAnnounceAlertInfoHash :: MonadIO m => DhtAnnounceAlert -> m ByteString
+dhtAnnounceAlertInfoHash :: MonadIO m => DhtAnnounceAlert -> m Sha1Hash
 dhtAnnounceAlertInfoHash ho =
-  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
-  ih <- fromPtr [CU.exp| sha1_hash * { new sha1_hash($(dht_announce_alert * hoPtr)->info_hash) } |]
-  sha1HashToByteString ih
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
+  fromPtr [CU.exp| sha1_hash * { new sha1_hash($(dht_announce_alert * hoPtr)->info_hash) } |]
 
 newtype DhtGetPeersAlert = DhtGetPeersAlert { unDhtGetPeersAlert :: Alert}
 
@@ -1803,11 +1800,10 @@ instance IsAlert DhtGetPeersAlert where
   fromAlert = DhtGetPeersAlert
   toAlert = unDhtGetPeersAlert
 
-dhtGetPeersAlertInfoHash :: MonadIO m => DhtGetPeersAlert -> m ByteString
+dhtGetPeersAlertInfoHash :: MonadIO m => DhtGetPeersAlert -> m Sha1Hash
 dhtGetPeersAlertInfoHash ho =
-  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
-  ih <- fromPtr [CU.exp| sha1_hash * { new sha1_hash($(dht_get_peers_alert * hoPtr)->info_hash) } |]
-  sha1HashToByteString ih
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
+  fromPtr [CU.exp| sha1_hash * { new sha1_hash($(dht_get_peers_alert * hoPtr)->info_hash) } |]
 
 data StatsChannel =
   UploadPayload
@@ -2113,7 +2109,7 @@ instance IsAlert StateUpdateAlert where
 stateUpdateAlertStatus :: MonadIO m => StateUpdateAlert -> m (StdVector TorrentStatus)
 stateUpdateAlertStatus ho =
   liftIO . withPtr (SubAlert ho) $ \hoPtr ->
-  fromPtr [CU.exp| VectorTorrentStatus * { new VectorTorrentStatus($(state_update_alert * hoPtr)->status) } |]
+  fromPtr [C.exp| VectorTorrentStatus * { new VectorTorrentStatus($(state_update_alert * hoPtr)->status) } |]
 
 newtype RssItemAlert = RssItemAlert { unRssItemAlert :: Alert}
 
@@ -2131,12 +2127,12 @@ instance IsAlert RssItemAlert where
 rssItemAlertHandle :: MonadIO m => RssItemAlert -> m FeedHandle
 rssItemAlertHandle ho =
   liftIO . withPtr (SubAlert ho) $ \hoPtr ->
-  fromPtr [CU.exp| feed_handle * { new feed_handle($(rss_item_alert * hoPtr)->handle) } |]
+  fromPtr [C.exp| feed_handle * { new feed_handle($(rss_item_alert * hoPtr)->handle) } |]
 
 rssItemAlertItem :: MonadIO m => RssItemAlert -> m FeedItem
 rssItemAlertItem ho =
   liftIO . withPtr (SubAlert ho) $ \hoPtr ->
-  fromPtr [CU.exp| feed_item * { new feed_item($(rss_item_alert * hoPtr)->item) } |]
+  fromPtr [C.exp| feed_item * { new feed_item($(rss_item_alert * hoPtr)->item) } |]
 
 -- TODO: libtorrent 1.1
 -- mmap_cache_alert
@@ -2183,11 +2179,10 @@ instance IsAlert DhtImmutableItemAlert where
   fromAlert = DhtImmutableItemAlert
   toAlert = unDhtImmutableItemAlert
 
-dhtImmutableItemAlertTarget :: MonadIO m => DhtImmutableItemAlert -> m ByteString
+dhtImmutableItemAlertTarget :: MonadIO m => DhtImmutableItemAlert -> m Sha1Hash
 dhtImmutableItemAlertTarget ho =
-  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
-  tgt <- fromPtr [CU.exp| sha1_hash * { new sha1_hash($(dht_immutable_item_alert * hoPtr)->target) } |]
-  sha1HashToByteString tgt
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
+  fromPtr [CU.exp| sha1_hash * { new sha1_hash($(dht_immutable_item_alert * hoPtr)->target) } |]
 
 dhtImmutableItemAlertItem :: MonadIO m => DhtImmutableItemAlert -> m Bencoded
 dhtImmutableItemAlertItem ho =
@@ -2297,11 +2292,10 @@ dhtPutAlertSeq ho =
   liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   [CU.exp| uint64_t { $(dht_put_alert * hoPtr)->seq } |]
 
-dhtPutAlertTarget :: MonadIO m => DhtPutAlert -> m ByteString
+dhtPutAlertTarget :: MonadIO m => DhtPutAlert -> m Sha1Hash
 dhtPutAlertTarget ho =
-  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
-  tgt <- fromPtr [CU.exp| sha1_hash * { new sha1_hash($(dht_put_alert * hoPtr)->target) } |]
-  sha1HashToByteString tgt
+  liftIO . withPtr (SubAlert ho) $ \hoPtr ->
+  fromPtr [CU.exp| sha1_hash * { new sha1_hash($(dht_put_alert * hoPtr)->target) } |]
 
 newtype I2pAlert = I2pAlert { unI2pAlert :: Alert}
 

@@ -121,18 +121,18 @@ newFeedSettings =
 updateFeed :: MonadIO m =>  FeedHandle -> m ()
 updateFeed ho =
   liftIO . withPtr ho $ \hoPtr ->
-  [CU.exp| void { $(feed_handle * hoPtr)->update_feed() } |]
+  [C.exp| void { $(feed_handle * hoPtr)->update_feed() } |]
 
 getFeedStatus :: MonadIO m =>  FeedHandle -> m FeedStatus
 getFeedStatus ho =
   liftIO . withPtr ho $ \hoPtr ->
-  fromPtr [CU.exp| feed_status * { new feed_status($(feed_handle * hoPtr)->get_feed_status()) } |]
+  fromPtr [C.exp| feed_status * { new feed_status($(feed_handle * hoPtr)->get_feed_status()) } |]
 
 setFeedSettings :: MonadIO m =>  FeedHandle -> FeedSettings -> m ()
 setFeedSettings ho fs =
   liftIO . withPtr ho $ \hoPtr ->
   withPtr fs $ \fsPtr ->
-  [CU.exp| void { $(feed_handle * hoPtr)->set_settings(*$(feed_settings * fsPtr)) } |]
+  [C.exp| void { $(feed_handle * hoPtr)->set_settings(*$(feed_settings * fsPtr)) } |]
 
 -- Feed status
 getFeedStatusUrl :: MonadIO m =>  FeedStatus -> m Text
@@ -171,7 +171,7 @@ getFeedStatusUpdating ho =
 getFeedStatusItems :: MonadIO m =>  FeedStatus -> m (StdVector FeedItem)
 getFeedStatusItems fs =
   liftIO . withPtr fs $ \fsPtr -> do
-  fromPtr [CU.exp| VectorFeedItem * { new VectorFeedItem($(feed_status * fsPtr)->items) } |]
+  fromPtr [C.exp| VectorFeedItem * { new VectorFeedItem($(feed_status * fsPtr)->items) } |]
 
 getFeedStatusError :: MonadIO m =>  FeedStatus -> m ErrorCode
 getFeedStatusError ho =
