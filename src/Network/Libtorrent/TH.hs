@@ -10,13 +10,11 @@ module Network.Libtorrent.TH where
 
 import qualified Crypto.Hash as CH
 import qualified Data.Binary as Binary
-import           Data.Word (Word32)
 import           Foreign.ForeignPtr (withForeignPtr)
 import           Foreign.Ptr ( Ptr, nullPtr )
 import           Language.C.Inline.Internal
 import qualified Language.C.Inline as C
 import           Language.Haskell.TH
-import           System.Random (randomIO)
 
 import           Network.Libtorrent.Internal
 import           Network.Libtorrent.Types.ArrayLike
@@ -67,10 +65,10 @@ defineVectorLike c_el_type_name c_arr_type_name c'elType c'arrType elType arrTyp
   (arrTypeName, arrConstrs)   <-  typeInfo arrType
   let arrConstrName = constrName arrType arrConstrs
 
-  destrFname <- uniqueCName ("delete_" ++ c_arr_type_name)
-  elemFname <- uniqueCName ("get_elem_" ++ c_arr_type_name)
-  constrFname <- uniqueCName ("new_" ++ c_arr_type_name)
-  addElemFname <- uniqueCName ("add_elem_" ++ c_arr_type_name)
+  destrFname   <- cName ("delete_" ++ c_arr_type_name)
+  elemFname    <- cName ("get_elem_" ++ c_arr_type_name)
+  constrFname  <- cName ("new_" ++ c_arr_type_name)
+  addElemFname <- cName ("add_elem_" ++ c_arr_type_name)
   fptr <- newName "fptr"
 
   let destrCode = Code Safe destrFtype
@@ -126,11 +124,10 @@ defineVectorLike c_el_type_name c_arr_type_name c'elType c'arrType elType arrTyp
 
 -- From c-inline
 
-uniqueCName :: String -> Q String
-uniqueCName x = do
-  c' <- runIO randomIO :: Q Word32
+cName :: String -> Q String
+cName x = do
   let unique = CH.hashlazy $ Binary.encode x :: CH.Digest CH.SHA1
   module_ <- loc_module <$> location
   let replaceDot '.' = '_'
       replaceDot c = c
-  return $ "inline_c_" ++ map replaceDot module_ ++ "_" ++ show c' ++ "_" ++ show unique
+  return $ "inline_c_" ++ map replaceDot module_ ++ "_" ++ show unique
