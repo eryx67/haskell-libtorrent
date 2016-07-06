@@ -1,13 +1,13 @@
 ### Libtorrent
 
-[http://www.libtorrent.org](libtorrent) bindings for Haskell.
+[libtorrent](http://www.libtorrent.org) bindings for Haskell.
 
 ### Examples
 
 In *examples* directory there are translations of original Python examples.
 
 This bindings are mostly one to one translation.
-[http://www.libtorrent.org/reference-Core.html#torrent_handle](Example) of saving resume data from official documentation could look as:
+[Example](http://www.libtorrent.org/reference-Core.html#torrent_handle) of saving resume data from official documentation could look as:
 
 ```haskell
 saveFastresume :: forall m . (MonadIO m, MonadBaseControl IO m) =>
