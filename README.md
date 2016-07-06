@@ -6,7 +6,7 @@
 
 In *examples* directory there are translations of original Python examples.
 
-This bindings are mostly one to one translation.
+These bindings are mostly one to one translation.
 [Example](http://www.libtorrent.org/reference-Core.html#torrent_handle) of saving resume data from official documentation could look as:
 
 ```haskell
