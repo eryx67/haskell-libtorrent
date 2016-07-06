@@ -46,7 +46,7 @@ import           System.Timeout.Lifted (timeout)
 import           Text.Read (readMaybe)
 
 
-import           Libtorrent
+import           Network.Libtorrent
 
 data Config = Config {
   _port            :: !CInt

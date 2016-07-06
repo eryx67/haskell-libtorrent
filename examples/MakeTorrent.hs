@@ -21,7 +21,7 @@ import           System.Directory (makeAbsolute)
 import           System.EasyFile
 import           System.IO (hFlush, stdout)
 
-import           Libtorrent hiding (files)
+import           Network.Libtorrent hiding (files)
 
 data Config = Config {
   _file         :: !Text

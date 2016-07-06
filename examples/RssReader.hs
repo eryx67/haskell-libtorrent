@@ -22,7 +22,7 @@ import           Formatting
 import           Options.Applicative
 import           System.IO (hFlush, hPutStr, stdout)
 
-import           Libtorrent
+import           Network.Libtorrent
 
 data Config = Config {
   _source         :: !Text

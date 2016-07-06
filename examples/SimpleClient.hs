@@ -19,7 +19,7 @@ import           Formatting
 import           Options.Applicative
 import           System.IO (hFlush, stdout)
 
-import           Libtorrent
+import           Network.Libtorrent
 
 data Config = Config {
   _source         :: !Text

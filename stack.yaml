@@ -2,7 +2,4 @@ flags: {}
 extra-package-dbs: []
 packages:
 - '.'
-extra-deps:
-- hoppy-generator-0.1.0
-- hoppy-runtime-0.1.0
 resolver: lts-6.1

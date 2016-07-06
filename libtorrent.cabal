@@ -1,93 +1,96 @@
 name:                libtorrent
-version:             0.1.0.0
-synopsis:            Initial project template from stack
-description:         Please see README.md
-homepage:            https://github.com/eryx67/libtorrent#readme
+version:             0.2.0.0
+synopsis:            Libtorrent libgary bindings for Haskell
+description:
+
+                     Bindings for <http://www.libtorrent.org/ libtorrent> library.
+
+homepage:            https://github.com/eryx67/haskell-libtorrent#readme
 license:             BSD3
 license-file:        LICENSE
 author:              Vladimir G. Sekisov
 maintainer:          eryx67@gmail.com
 copyright:           BSD
-category:            Web
+category:            Network
 build-type:          Simple
--- extra-source-files:
+extra-source-files: test-data/debian-8.5.0-amd64-CD-1.iso.torrent
+                  , README.md
+                  , LICENSE
 cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
   ghc-options:         -Wall
-  exposed-modules:     Libtorrent
-                     , Libtorrent.Internal
-                     , Libtorrent.Inline
-                     , Libtorrent.Types.ArrayLike
-                     , Libtorrent.Types
-                     , Libtorrent.TH
-                     , Libtorrent.String
-                     , Libtorrent.Sha1Hash
-                     , Libtorrent.Bitfield
-                     , Libtorrent.ErrorCode
-                     , Libtorrent.Exceptions
-                     , Libtorrent.Exceptions.Internal
-                     , Libtorrent.Extensions
-                     , Libtorrent.FileStorage
-                     , Libtorrent.FileStorage.FileSlice
-                     , Libtorrent.Session
-                     , Libtorrent.Session.SessionStatus
-                     , Libtorrent.Session.AddTorrentParams
-                     , Libtorrent.Session.DhtSettings
-                     , Libtorrent.Session.PeSettings
-                     , Libtorrent.Session.ProxySettings
-                     , Libtorrent.Session.SessionSettings
-                     , Libtorrent.TorrentInfo
-                     , Libtorrent.TorrentInfo.AnnounceEntry
-                     , Libtorrent.TorrentHandle
-                     , Libtorrent.TorrentHandle.TorrentStatus
-                     , Libtorrent.PeerInfo
-                     , Libtorrent.PeerRequest
-                     , Libtorrent.TorrentHandle.PartialPieceInfo
-                     , Libtorrent.TorrentHandle.BlockInfo
-                     , Libtorrent.Alert
-                     , Libtorrent.Bencode
-                     , Libtorrent.CreateTorrent
-                     , Libtorrent.Rss.FeedItem
-                     , Libtorrent.Rss.FeedHandle
-                     , Libtorrent.Rss
-                     , Libtorrent.Vectors
-  c-sources: src/Libtorrent/String.cpp
-           , src/Libtorrent/Sha1Hash.cpp
-           , src/Libtorrent/Bitfield.cpp
-           , src/Libtorrent/ErrorCode.cpp
-           , src/Libtorrent/Exceptions/Internal.cpp
-           , src/Libtorrent/Extensions.cpp
-           , src/Libtorrent/FileStorage.cpp
-           , src/Libtorrent/FileStorage/FileSlice.cpp
-           , src/Libtorrent/Session.cpp
-           , src/Libtorrent/Session/AddTorrentParams.cpp
-           , src/Libtorrent/Session/DhtSettings.cpp
-           , src/Libtorrent/Session/PeSettings.cpp
-           , src/Libtorrent/Session/ProxySettings.cpp
-           , src/Libtorrent/Session/SessionSettings.cpp
-           , src/Libtorrent/Session/SessionStatus.cpp
-           , src/Libtorrent/TorrentInfo.cpp
-           , src/Libtorrent/TorrentInfo/AnnounceEntry.cpp
-           , src/Libtorrent/TorrentHandle.cpp
-           , src/Libtorrent/TorrentHandle/TorrentStatus.cpp
-           , src/Libtorrent/PeerInfo.cpp
-           , src/Libtorrent/PeerRequest.cpp
-           , src/Libtorrent/TorrentHandle/PartialPieceInfo.cpp
-           , src/Libtorrent/TorrentHandle/BlockInfo.cpp
-           , src/Libtorrent/Alert.cpp
-           , src/Libtorrent/Bencode.cpp
-           , src/Libtorrent/CreateTorrent.cpp
-           , src/Libtorrent/Rss/FeedItem.cpp
-           , src/Libtorrent/Rss/FeedHandle.cpp
-           , src/Libtorrent/Rss.cpp
-           , src/Libtorrent/Vectors.cpp
-           , src/Libtorrent.cpp
+  exposed-modules:     Network.Libtorrent
+                     , Network.Libtorrent.Internal
+                     , Network.Libtorrent.Inline
+                     , Network.Libtorrent.Types.ArrayLike
+                     , Network.Libtorrent.Types
+                     , Network.Libtorrent.TH
+                     , Network.Libtorrent.String
+                     , Network.Libtorrent.Sha1Hash
+                     , Network.Libtorrent.Bitfield
+                     , Network.Libtorrent.ErrorCode
+                     , Network.Libtorrent.Exceptions
+                     , Network.Libtorrent.Exceptions.Internal
+                     , Network.Libtorrent.Extensions
+                     , Network.Libtorrent.FileStorage
+                     , Network.Libtorrent.FileStorage.FileSlice
+                     , Network.Libtorrent.Session
+                     , Network.Libtorrent.Session.SessionStatus
+                     , Network.Libtorrent.Session.AddTorrentParams
+                     , Network.Libtorrent.Session.DhtSettings
+                     , Network.Libtorrent.Session.PeSettings
+                     , Network.Libtorrent.Session.ProxySettings
+                     , Network.Libtorrent.Session.SessionSettings
+                     , Network.Libtorrent.TorrentInfo
+                     , Network.Libtorrent.TorrentInfo.AnnounceEntry
+                     , Network.Libtorrent.TorrentHandle
+                     , Network.Libtorrent.TorrentHandle.TorrentStatus
+                     , Network.Libtorrent.PeerInfo
+                     , Network.Libtorrent.PeerRequest
+                     , Network.Libtorrent.TorrentHandle.PartialPieceInfo
+                     , Network.Libtorrent.TorrentHandle.BlockInfo
+                     , Network.Libtorrent.Alert
+                     , Network.Libtorrent.Bencode
+                     , Network.Libtorrent.CreateTorrent
+                     , Network.Libtorrent.Rss.FeedItem
+                     , Network.Libtorrent.Rss.FeedHandle
+                     , Network.Libtorrent.Rss
+                     , Network.Libtorrent.Vectors
+  c-sources: src/Network/Libtorrent/String.cpp
+           , src/Network/Libtorrent/Sha1Hash.cpp
+           , src/Network/Libtorrent/Bitfield.cpp
+           , src/Network/Libtorrent/ErrorCode.cpp
+           , src/Network/Libtorrent/Exceptions/Internal.cpp
+           , src/Network/Libtorrent/Extensions.cpp
+           , src/Network/Libtorrent/FileStorage.cpp
+           , src/Network/Libtorrent/FileStorage/FileSlice.cpp
+           , src/Network/Libtorrent/Session.cpp
+           , src/Network/Libtorrent/Session/AddTorrentParams.cpp
+           , src/Network/Libtorrent/Session/DhtSettings.cpp
+           , src/Network/Libtorrent/Session/PeSettings.cpp
+           , src/Network/Libtorrent/Session/ProxySettings.cpp
+           , src/Network/Libtorrent/Session/SessionSettings.cpp
+           , src/Network/Libtorrent/Session/SessionStatus.cpp
+           , src/Network/Libtorrent/TorrentInfo.cpp
+           , src/Network/Libtorrent/TorrentInfo/AnnounceEntry.cpp
+           , src/Network/Libtorrent/TorrentHandle.cpp
+           , src/Network/Libtorrent/TorrentHandle/TorrentStatus.cpp
+           , src/Network/Libtorrent/PeerInfo.cpp
+           , src/Network/Libtorrent/PeerRequest.cpp
+           , src/Network/Libtorrent/TorrentHandle/PartialPieceInfo.cpp
+           , src/Network/Libtorrent/TorrentHandle/BlockInfo.cpp
+           , src/Network/Libtorrent/Alert.cpp
+           , src/Network/Libtorrent/Bencode.cpp
+           , src/Network/Libtorrent/CreateTorrent.cpp
+           , src/Network/Libtorrent/Rss/FeedItem.cpp
+           , src/Network/Libtorrent/Rss/FeedHandle.cpp
+           , src/Network/Libtorrent/Rss.cpp
+           , src/Network/Libtorrent/Vectors.cpp
+           , src/Network/Libtorrent.cpp
   build-depends:       base >= 4.7 && < 5
                      , containers >= 0.5.6.2
-                     , hoppy-generator
-                     , hoppy-runtime
                      , inline-c
                      , inline-c-cpp
                      , text
@@ -107,7 +110,6 @@ library
   include-dirs: include
   cc-options: -Wall -O2 -std=c++11
   ghc-options: -Wall -fwarn-incomplete-patterns -threaded -funbox-strict-fields -O2 -rtsopts
-               -ddump-splices
 
 executable libtorrent-client
   hs-source-dirs:      examples
@@ -202,4 +204,4 @@ test-suite libtorrent-test
 
 source-repository head
   type:     git
-  location: https://github.com/eryx67/libtorrent
+  location: https://github.com/eryx67/haskell-libtorrent
