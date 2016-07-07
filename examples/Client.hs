@@ -37,7 +37,6 @@ import           Formatting
 import           Formatting.ShortFormatters (pf, f)
 import           Options.Applicative
 import qualified System.Console.ANSI as Console
-import           System.Directory (removeFile)
 import           System.IO (BufferMode(..),
                             hIsTerminalDevice , hFlush, hSetEcho,
                             stdin, stdout, stderr, hSetBuffering)
@@ -47,6 +46,7 @@ import           Text.Read (readMaybe)
 
 
 import           Network.Libtorrent
+
 
 data Config = Config {
   _port            :: !CInt
@@ -98,6 +98,14 @@ main = runStderrLoggingT $ do
 
   listenOn ses (_port, _port + 10) Nothing
   setAlertMask ses $ BitFlags [minBound..]
+
+  let dhtRouters = [
+        ("router.bittorrent.com", 6881)
+        , ("router.utorrent.com", 6881)
+        , ("router.bitcomet.com", 6881)
+        , ("dht.transmissionbt.com", 6881)
+        ]
+  forM_  dhtRouters (uncurry $ addDhtRouter ses)
   startDht ses
 
   tid <- liftIO myThreadId
@@ -338,7 +346,9 @@ filesProgress :: MonadIO m => TorrentHandle -> W.WriterT TL.Text m ()
 filesProgress th = do
   s <- torrentStatus th Nothing
   state <- getState s
-  when (state /= Seeding) $ do
+  hm <- getHasMetadata s
+
+  when (hm && state /= Seeding) $ do
     pgs :: [CFloat] <- (map fromIntegral . V.toList) <$> fileProgress th Nothing
     ti <- torrentFile th
     fs <- files ti
@@ -346,8 +356,8 @@ filesProgress th = do
     fes <- mapM (fileEntryAt fs) [0..fn - 1]
     forM_ (zip pgs fes) $ \(pg, fe) -> do
       fp <- getPath fe
-      fs <- fromIntegral <$> getSize fe
-      outln $ format (stext %  " " % stext) (progressBar (pg / fs) 20) fp
+      fsz <- fromIntegral <$> getSize fe
+      outln $ format (stext %  " " % stext) (progressBar (pg / fsz) 20) fp
 
 printPeerInfo :: MonadIO m => [PeerInfo] -> W.WriterT TL.Text m ()
 printPeerInfo pis = do
@@ -366,8 +376,8 @@ printPeerInfo pis = do
     dldt <- getDownloadingTotal pi
     let flagsTxt =
           T.pack $
-          zipWith (\flag c ->
-                    if elem flag flags then c else '.')
+          zipWith (\flg c ->
+                    if elem flg flags then c else '.')
           [Interesting, Choked, RemoteInterested, RemoteChoked, SupportsExtensions, LocalConnection]
           ['I', 'C', 'i', 'c', 'e', 'l']
         progress = if dpi >= 0

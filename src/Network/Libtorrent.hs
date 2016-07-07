@@ -761,8 +761,8 @@ module Network.Libtorrent (
   , setPrivacyLookups
   , getEnforceNodeId
   , setEnforceNodeId
-  , getIgnoreDarkBoolernet
-  , setIgnoreDarkBoolernet
+  , getIgnoreDarkInternet
+  , setIgnoreDarkInternet
     -- ** PeSettings
   , PeSettings
   , PeEncPolicy(..)

@@ -32,8 +32,8 @@ module Network.Libtorrent.Session.DhtSettings (DhtSettings
                                         , setPrivacyLookups
                                         , getEnforceNodeId
                                         , setEnforceNodeId
-                                        , getIgnoreDarkBoolernet
-                                        , setIgnoreDarkBoolernet
+                                        , getIgnoreDarkInternet
+                                        , setIgnoreDarkInternet
                                         ) where
 
 import           Control.Monad.IO.Class (MonadIO, liftIO)
@@ -200,13 +200,13 @@ setEnforceNodeId ho val =
   let val' = fromBool val
   [CU.exp| void { $(dht_settings * hoPtr)->enforce_node_id = $(bool val')} |]
 
-getIgnoreDarkBoolernet :: MonadIO m =>  DhtSettings -> m Bool
-getIgnoreDarkBoolernet ho =
+getIgnoreDarkInternet :: MonadIO m =>  DhtSettings -> m Bool
+getIgnoreDarkInternet ho =
   liftIO . withPtr ho $ \hoPtr ->
   toBool <$> [CU.exp| bool { $(dht_settings * hoPtr)->ignore_dark_internet } |]
 
-setIgnoreDarkBoolernet :: MonadIO m =>  DhtSettings -> Bool -> m ()
-setIgnoreDarkBoolernet ho val =
+setIgnoreDarkInternet :: MonadIO m =>  DhtSettings -> Bool -> m ()
+setIgnoreDarkInternet ho val =
   liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromBool val
   [CU.exp| void { $(dht_settings * hoPtr)->ignore_dark_internet = $(bool val')} |]
