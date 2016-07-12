@@ -1,8 +1,8 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies    #-}
-{-# LANGUAGE QuasiQuotes     #-}
-{-# LANGUAGE TupleSections   #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TupleSections     #-}
+{-# LANGUAGE TypeFamilies      #-}
 -- | <http://www.libtorrent.org/reference-Core.html#peer-info peer_info> structure for "Libtorrent"
 
 module Network.Libtorrent.PeerInfo (PeerFlags(..)
@@ -104,23 +104,23 @@ module Network.Libtorrent.PeerInfo (PeerFlags(..)
                            , setWriteState
                            ) where
 
-import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Data.Array.BitArray (BitArray)
-import           Data.Int (Int64)
-import           Data.Text (Text)
-import qualified Data.Text.Foreign as TF
-import           Data.Word (Word64)
-import           Foreign.C.Types (CInt)
-import           Foreign.ForeignPtr ( ForeignPtr, withForeignPtr )
-import qualified Language.C.Inline as C
-import qualified Language.C.Inline.Cpp as C
-import qualified Language.C.Inline.Unsafe as CU
+import           Control.Monad.IO.Class      (MonadIO, liftIO)
+import           Data.Array.BitArray         (BitArray)
+import           Data.Int                    (Int64)
+import           Data.Text                   (Text)
+import qualified Data.Text.Foreign           as TF
+import           Data.Word                   (Word64)
+import           Foreign.C.Types             (CInt)
+import           Foreign.ForeignPtr          (ForeignPtr, withForeignPtr)
+import qualified Language.C.Inline           as C
+import qualified Language.C.Inline.Cpp       as C
+import qualified Language.C.Inline.Unsafe    as CU
 
 import           Network.Libtorrent.Bitfield
 import           Network.Libtorrent.Inline
 import           Network.Libtorrent.Internal
-import           Network.Libtorrent.String
 import           Network.Libtorrent.Sha1Hash
+import           Network.Libtorrent.String
 import           Network.Libtorrent.Types
 
 C.context libtorrentCtx
@@ -178,7 +178,7 @@ data BwState =
   | BwLimit
   | BwNetwork
   | BwDisk
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Ord)
 
 newtype PeerInfo = PeerInfo { unPeerInfo :: ForeignPtr (CType PeerInfo)}
 

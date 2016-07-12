@@ -1,8 +1,8 @@
-{-# LANGUAGE TemplateHaskell   #-}
-{-# LANGUAGE TypeFamilies      #-}
-{-# LANGUAGE QuasiQuotes       #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TypeFamilies      #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | <http://www.libtorrent.org/reference-Core.html#torrent-handle torrent_handle> structure for "Libtorrent"
 -- All functions in this module can throw 'LibtorrentException'.
@@ -81,37 +81,39 @@ module Network.Libtorrent.TorrentHandle ( TorrentHandle(..)
                                 , torrentFile
                                 ) where
 
-import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Data.ByteString (ByteString)
-import           Data.Int (Int64)
-import           Data.Maybe (fromMaybe)
-import           Data.Text (Text)
-import qualified Data.Text as T
-import           Data.Vector.Storable (unsafeFromForeignPtr0, Vector)
-import           Foreign.C.String (withCAString)
-import           Foreign.C.Types (CInt)
-import           Foreign.Concurrent ( newForeignPtr )
-import           Foreign.ForeignPtr ( ForeignPtr, withForeignPtr)
-import           Foreign.Marshal.Alloc (alloca)
-import           Foreign.Marshal.Utils (toBool, fromBool)
-import           Foreign.Ptr ( Ptr )
-import           Foreign.Storable (peek)
-import qualified Language.C.Inline as C
-import qualified Language.C.Inline.Cpp as C
-import qualified Language.C.Inline.Unsafe as CU
+import           Control.Monad.IO.Class                            (MonadIO,
+                                                                    liftIO)
+import           Data.ByteString                                   (ByteString)
+import           Data.Int                                          (Int64)
+import           Data.Maybe                                        (fromMaybe)
+import           Data.Text                                         (Text)
+import qualified Data.Text                                         as T
+import           Data.Vector.Storable                              (Vector, unsafeFromForeignPtr0)
+import           Foreign.C.String                                  (withCAString)
+import           Foreign.C.Types                                   (CInt)
+import           Foreign.Concurrent                                (newForeignPtr)
+import           Foreign.ForeignPtr                                (ForeignPtr, withForeignPtr)
+import           Foreign.Marshal.Alloc                             (alloca)
+import           Foreign.Marshal.Utils                             (fromBool,
+                                                                    toBool)
+import           Foreign.Ptr                                       (Ptr)
+import           Foreign.Storable                                  (peek)
+import qualified Language.C.Inline                                 as C
+import qualified Language.C.Inline.Cpp                             as C
+import qualified Language.C.Inline.Unsafe                          as CU
 
 import           Network.Libtorrent.Exceptions
 import           Network.Libtorrent.Inline
 import           Network.Libtorrent.Internal
 import           Network.Libtorrent.PeerInfo
-import           Network.Libtorrent.Sha1Hash (Sha1Hash)
+import           Network.Libtorrent.Sha1Hash                       (Sha1Hash)
 import           Network.Libtorrent.String
+import           Network.Libtorrent.TH                             (defineStdVector)
 import           Network.Libtorrent.TorrentHandle.PartialPieceInfo
 import           Network.Libtorrent.TorrentHandle.TorrentStatus
+import           Network.Libtorrent.TorrentInfo                    (TorrentInfo)
 import           Network.Libtorrent.TorrentInfo.AnnounceEntry
-import           Network.Libtorrent.TorrentInfo (TorrentInfo)
 import           Network.Libtorrent.Types
-import           Network.Libtorrent.TH (defineStdVector)
 
 C.context libtorrentCtx
 

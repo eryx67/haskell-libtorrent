@@ -1,8 +1,8 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies    #-}
-{-# LANGUAGE QuasiQuotes     #-}
-{-# LANGUAGE TupleSections   #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TupleSections     #-}
+{-# LANGUAGE TypeFamilies      #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | <http://www.libtorrent.org/reference-Core.html#partial-piece-info partial_piece_info> structure for "Libtorrent"
 module Network.Libtorrent.TorrentHandle.PartialPieceInfo( PieceState(..)
@@ -16,18 +16,19 @@ module Network.Libtorrent.TorrentHandle.PartialPieceInfo( PieceState(..)
                                                 , getPieceState
                                                 ) where
 
-import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Foreign.C.Types (CInt)
-import           Foreign.ForeignPtr ( ForeignPtr, withForeignPtr )
-import qualified Language.C.Inline as C
-import qualified Language.C.Inline.Cpp as C
-import qualified Language.C.Inline.Unsafe as CU
+import           Control.Monad.IO.Class                     (MonadIO, liftIO)
+import           Foreign.C.Types                            (CInt)
+import           Foreign.ForeignPtr                         (ForeignPtr,
+                                                             withForeignPtr)
+import qualified Language.C.Inline                          as C
+import qualified Language.C.Inline.Cpp                      as C
+import qualified Language.C.Inline.Unsafe                   as CU
 
 import           Network.Libtorrent.Inline
 import           Network.Libtorrent.Internal
+import           Network.Libtorrent.TH                      (defineStdVector)
 import           Network.Libtorrent.TorrentHandle.BlockInfo
 import           Network.Libtorrent.Types
-import           Network.Libtorrent.TH (defineStdVector)
 
 C.context libtorrentCtx
 
@@ -47,7 +48,7 @@ data PieceState =
   | PieceSlow
   | PieceMedium
   | PieceFast
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Ord)
 
 newtype PartialPieceInfo = PartialPieceInfo { unPartialPieceInfo :: ForeignPtr (CType PartialPieceInfo)}
 

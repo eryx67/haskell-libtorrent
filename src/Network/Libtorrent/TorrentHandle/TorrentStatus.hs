@@ -1,8 +1,8 @@
-{-# LANGUAGE TemplateHaskell     #-}
-{-# LANGUAGE TypeFamilies        #-}
-{-# LANGUAGE QuasiQuotes         #-}
-{-# LANGUAGE TupleSections       #-}
-{-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TupleSections     #-}
+{-# LANGUAGE TypeFamilies      #-}
 -- | <http://www.libtorrent.org/reference-Core.html#torrent_status torrent_status> for "Libtorrent"
 
 module Network.Libtorrent.TorrentHandle.TorrentStatus (TorrentState(..)
@@ -80,23 +80,23 @@ module Network.Libtorrent.TorrentHandle.TorrentStatus (TorrentState(..)
                                               ) where
 
 
-import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Data.Array.BitArray (BitArray)
-import           Data.Int (Int64)
-import           Data.Text (Text)
-import           Foreign.C.Types (CInt)
-import           Foreign.ForeignPtr ( ForeignPtr, withForeignPtr )
-import           Foreign.Marshal.Utils (toBool)
-import qualified Language.C.Inline as C
-import qualified Language.C.Inline.Cpp as C
-import qualified Language.C.Inline.Unsafe as CU
+import           Control.Monad.IO.Class      (MonadIO, liftIO)
+import           Data.Array.BitArray         (BitArray)
+import           Data.Int                    (Int64)
+import           Data.Text                   (Text)
+import           Foreign.C.Types             (CInt)
+import           Foreign.ForeignPtr          (ForeignPtr, withForeignPtr)
+import           Foreign.Marshal.Utils       (toBool)
+import qualified Language.C.Inline           as C
+import qualified Language.C.Inline.Cpp       as C
+import qualified Language.C.Inline.Unsafe    as CU
 
+import           Network.Libtorrent.Bitfield
 import           Network.Libtorrent.Inline
 import           Network.Libtorrent.Internal
-import           Network.Libtorrent.Types
-import           Network.Libtorrent.String
 import           Network.Libtorrent.Sha1Hash (Sha1Hash)
-import           Network.Libtorrent.Bitfield
+import           Network.Libtorrent.String
+import           Network.Libtorrent.Types
 
 C.context libtorrentCtx
 
@@ -116,7 +116,7 @@ data TorrentState =
   | Seeding
   | Allocating
   | CheckingResumeData
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Ord)
 
 newtype TorrentStatus = TorrentStatus { unTorrentStatus :: ForeignPtr (CType TorrentStatus)}
 

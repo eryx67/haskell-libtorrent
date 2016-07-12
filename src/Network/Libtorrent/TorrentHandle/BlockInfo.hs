@@ -1,8 +1,8 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies    #-}
-{-# LANGUAGE QuasiQuotes     #-}
-{-# LANGUAGE TupleSections   #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TupleSections     #-}
+{-# LANGUAGE TypeFamilies      #-}
 -- | <http://www.libtorrent.org/reference-Core.html#block-info block_info> structure for "Libtorrent"
 module Network.Libtorrent.TorrentHandle.BlockInfo( BlockState(..)
                                          , BlockInfo(..)
@@ -12,12 +12,12 @@ module Network.Libtorrent.TorrentHandle.BlockInfo( BlockState(..)
                                          , getBlockInfoState
                                          ) where
 
-import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Foreign.C.Types (CInt)
-import           Foreign.ForeignPtr ( ForeignPtr, withForeignPtr )
-import qualified Language.C.Inline as C
-import qualified Language.C.Inline.Cpp as C
-import qualified Language.C.Inline.Unsafe as CU
+import           Control.Monad.IO.Class      (MonadIO, liftIO)
+import           Foreign.C.Types             (CInt)
+import           Foreign.ForeignPtr          (ForeignPtr, withForeignPtr)
+import qualified Language.C.Inline           as C
+import qualified Language.C.Inline.Cpp       as C
+import qualified Language.C.Inline.Unsafe    as CU
 
 import           Network.Libtorrent.Inline
 import           Network.Libtorrent.Internal
@@ -38,7 +38,7 @@ data BlockState =
   | BlockRequested
   | BlockWriting
   | BlockFinished
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Ord)
 
 newtype BlockInfo = BlockInfo { unBlockInfo :: ForeignPtr (CType BlockInfo)}
 
