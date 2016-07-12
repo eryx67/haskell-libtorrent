@@ -1,8 +1,8 @@
-{-# LANGUAGE TemplateHaskell      #-}
-{-# LANGUAGE TypeFamilies         #-}
-{-# LANGUAGE QuasiQuotes          #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
-{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE QuasiQuotes         #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE TypeFamilies        #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | <http://www.libtorrent.org/reference-Core.html#torrent-info torrent_info> structure for "Libtorrent"
 
@@ -44,27 +44,29 @@ module Network.Libtorrent.TorrentInfo( TorrentInfo(..)
                              , isMerkleTorrent
                              ) where
 
-import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Data.ByteString (ByteString)
-import qualified Data.ByteString as BS
-import           Data.Int (Int64)
-import           Data.Maybe (fromMaybe)
-import           Data.Text (Text)
-import qualified Data.Text.Foreign as TF
-import           Foreign.ForeignPtr ( ForeignPtr, withForeignPtr )
-import           Foreign.Marshal.Utils (toBool)
-import qualified Language.C.Inline as C
-import qualified Language.C.Inline.Cpp as C
-import qualified Language.C.Inline.Unsafe as CU
+import           Control.Monad.IO.Class                       (MonadIO, liftIO)
+import           Data.ByteString                              (ByteString)
+import qualified Data.ByteString                              as BS
+import           Data.Int                                     (Int64)
+import           Data.Maybe                                   (fromMaybe)
+import           Data.Text                                    (Text)
+import qualified Data.Text.Foreign                            as TF
+import           Foreign.ForeignPtr                           (ForeignPtr,
+                                                               withForeignPtr)
+import           Foreign.Marshal.Utils                        (toBool)
+import qualified Language.C.Inline                            as C
+import qualified Language.C.Inline.Cpp                        as C
+import qualified Language.C.Inline.Unsafe                     as CU
 
 import           Network.Libtorrent.Exceptions
-import           Network.Libtorrent.FileStorage (FileStorage, FileSlice)
+import           Network.Libtorrent.FileStorage               (FileSlice,
+                                                               FileStorage)
 import           Network.Libtorrent.Inline
 import           Network.Libtorrent.Internal
-import           Network.Libtorrent.PeerRequest (PeerRequest)
+import           Network.Libtorrent.PeerRequest               (PeerRequest)
 import           Network.Libtorrent.Sha1Hash
 import           Network.Libtorrent.String
-import           Network.Libtorrent.TH (defineStdVector)
+import           Network.Libtorrent.TH                        (defineStdVector)
 import           Network.Libtorrent.TorrentInfo.AnnounceEntry (AnnounceEntry)
 import           Network.Libtorrent.Types
 
@@ -198,11 +200,10 @@ pieceLength ho =
   liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| int { $(torrent_info * hoPtr)->piece_length() } |]
 
-torrentInfoInfoHash :: MonadIO m =>  TorrentInfo -> m ByteString
+torrentInfoInfoHash :: MonadIO m =>  TorrentInfo -> m Sha1Hash
 torrentInfoInfoHash ho =
-  liftIO . withPtr ho $ \hoPtr -> do
-  ih <- fromPtr [CU.exp| sha1_hash * { new sha1_hash($(torrent_info * hoPtr)->info_hash()) } |]
-  sha1HashToByteString ih
+  liftIO . withPtr ho $ \hoPtr ->
+  fromPtr [CU.exp| sha1_hash * { new sha1_hash($(torrent_info * hoPtr)->info_hash()) } |]
 
 numFiles :: MonadIO m =>  TorrentInfo -> m C.CInt
 numFiles ho =
@@ -306,7 +307,7 @@ torrentInfoComment ho =
   liftIO . withPtr ho $ \hoPtr -> do
   str <- fromPtr [CU.exp| string * { new std::string($(torrent_info * hoPtr)->comment()) } |]
   stdStringToText str
-  
+
 torrentInfoCreator :: MonadIO m =>  TorrentInfo -> m Text
 torrentInfoCreator ho =
   liftIO . withPtr ho $ \hoPtr -> do
@@ -319,7 +320,7 @@ torrentInfoCreator ho =
 --    bool parse_info_section (bdecode_node const& e, error_code& ec, int flags);
 --    bdecode_node info (char const* key) const;
 
-torrentInfoMetadata :: MonadIO m =>  TorrentInfo -> m ByteString 
+torrentInfoMetadata :: MonadIO m =>  TorrentInfo -> m ByteString
 torrentInfoMetadata ho =
   liftIO . withPtr ho $ \hoPtr -> do
   (len, buf) <- C.withPtrs_ $ \(lPtr, bufPtr) -> do
