@@ -84,7 +84,7 @@ import qualified Data.Text as T
 import           Foreign.C.String (withCString)
 import           Foreign.ForeignPtr ( ForeignPtr, withForeignPtr )
 import           Foreign.Marshal.Utils (toBool)
-import           Foreign.Ptr ( Ptr, FunPtr, freeHaskellFunPtr )
+import           Foreign.Ptr ( Ptr, FunPtr, nullPtr, freeHaskellFunPtr )
 import qualified Language.C.Inline as C
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Unsafe as CU
@@ -272,11 +272,21 @@ postTorrentUpdates ho =
   liftIO . withPtr ho $ \hoPtr ->
   [CU.exp| void { $(session * hoPtr)->post_torrent_updates() } |]
 
-findTorrent :: MonadIO m => Session -> Sha1Hash -> m TorrentHandle
+findTorrent :: MonadIO m => Session -> Sha1Hash -> m (Maybe TorrentHandle)
 findTorrent ho info_hash =
   liftIO . withPtr ho $ \hoPtr ->
-  withPtr info_hash $ \ihPtr ->
-  fromPtr [C.exp| torrent_handle * { new torrent_handle($(session * hoPtr)->find_torrent(*$(sha1_hash * ihPtr))) } |]
+  withPtr info_hash $ \ihPtr -> do
+  ptr <- [C.block| torrent_handle * {
+             torrent_handle h = $(session * hoPtr)->find_torrent(*$(sha1_hash * ihPtr));
+             if (h.is_valid())
+               return  new torrent_handle();
+             else
+               return (torrent_handle *) NULL;
+            }
+          |]
+  if ptr /= nullPtr
+  then return Nothing
+  else fmap Just . fromPtr $ pure ptr
 
 getTorrents :: MonadIO m => Session -> m (StdVector TorrentHandle)
 getTorrents ho =
