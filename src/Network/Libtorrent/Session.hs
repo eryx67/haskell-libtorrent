@@ -1,7 +1,7 @@
+{-# LANGUAGE QuasiQuotes     #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE QuasiQuotes #-}
--- | 
+{-# LANGUAGE TypeFamilies    #-}
+-- |
 
 module Network.Libtorrent.Session (Session
                           , DhtItemKey(..)
@@ -73,41 +73,48 @@ module Network.Libtorrent.Session (Session
                           ) where
 
 
-import           Control.Monad (forM)
-import           Control.Monad.Catch (bracket)
-import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Data.ByteString (ByteString)
-import qualified Data.ByteString as BS
-import           Data.Maybe (fromMaybe, catMaybes)
-import           Data.Text (Text)
-import qualified Data.Text as T
-import           Foreign.C.String (withCString)
-import           Foreign.ForeignPtr ( ForeignPtr, withForeignPtr )
-import           Foreign.Marshal.Utils (toBool)
-import           Foreign.Ptr ( Ptr, FunPtr, nullPtr, freeHaskellFunPtr )
-import qualified Language.C.Inline as C
-import qualified Language.C.Inline.Cpp as C
-import qualified Language.C.Inline.Unsafe as CU
+import           Control.Monad                                  (forM)
+import           Control.Monad.Catch                            (bracket)
+import           Control.Monad.IO.Class                         (MonadIO,
+                                                                 liftIO)
+import           Data.ByteString                                (ByteString)
+import qualified Data.ByteString                                as BS
+import           Data.Maybe                                     (catMaybes,
+                                                                 fromMaybe)
+import           Data.Text                                      (Text)
+import qualified Data.Text                                      as T
+import           Foreign.C.String                               (withCString)
+import           Foreign.ForeignPtr                             (ForeignPtr,
+                                                                 withForeignPtr)
+import           Foreign.Marshal.Utils                          (toBool)
+import           Foreign.Ptr                                    (FunPtr, Ptr, freeHaskellFunPtr,
+                                                                 nullPtr)
+import qualified Language.C.Inline                              as C
+import qualified Language.C.Inline.Cpp                          as C
+import qualified Language.C.Inline.Unsafe                       as CU
 
-import           Network.Libtorrent.Alert (Alert, AlertCategory, AlertHandler,
-                                   newAlertDeque, handleAlerts)
+import           Network.Libtorrent.Alert                       (Alert,
+                                                                 AlertCategory,
+                                                                 AlertHandler,
+                                                                 handleAlerts,
+                                                                 newAlertDeque)
 import           Network.Libtorrent.Bencode
 import           Network.Libtorrent.Exceptions
 import           Network.Libtorrent.Inline
 import           Network.Libtorrent.Internal
 import           Network.Libtorrent.Rss
 import           Network.Libtorrent.Session.AddTorrentParams
-import           Network.Libtorrent.Session.DhtSettings (DhtSettings)
-import           Network.Libtorrent.Session.PeSettings (PeSettings)
-import           Network.Libtorrent.Session.ProxySettings (ProxySettings)
-import           Network.Libtorrent.Session.SessionSettings (SessionSettings)
-import           Network.Libtorrent.Session.SessionStatus (SessionStatus)
-import           Network.Libtorrent.Sha1Hash (Sha1Hash)
+import           Network.Libtorrent.Session.DhtSettings         (DhtSettings)
+import           Network.Libtorrent.Session.PeSettings          (PeSettings)
+import           Network.Libtorrent.Session.ProxySettings       (ProxySettings)
+import           Network.Libtorrent.Session.SessionSettings     (SessionSettings)
+import           Network.Libtorrent.Session.SessionStatus       (SessionStatus)
+import           Network.Libtorrent.Sha1Hash                    (Sha1Hash)
 import           Network.Libtorrent.String
 import           Network.Libtorrent.TorrentHandle
 import           Network.Libtorrent.TorrentHandle.TorrentStatus
 import           Network.Libtorrent.Types
-import           Network.Libtorrent.Types.ArrayLike (toList)
+import           Network.Libtorrent.Types.ArrayLike             (toList)
 
 C.context libtorrentCtx
 
@@ -279,12 +286,12 @@ findTorrent ho info_hash =
   ptr <- [C.block| torrent_handle * {
              torrent_handle h = $(session * hoPtr)->find_torrent(*$(sha1_hash * ihPtr));
              if (h.is_valid())
-               return  new torrent_handle();
+               return  new torrent_handle(h);
              else
                return (torrent_handle *) NULL;
             }
           |]
-  if ptr /= nullPtr
+  if ptr == nullPtr
   then return Nothing
   else fmap Just . fromPtr $ pure ptr
 
