@@ -1,5 +1,5 @@
-{-# LANGUAGE TemplateHaskell     #-}
-{-# LANGUAGE QuasiQuotes         #-}
+{-# LANGUAGE QuasiQuotes     #-}
+{-# LANGUAGE TemplateHaskell #-}
 {- | <http://www.libtorrent.org libtorrent> bindings for Haskell.
 Structure of this document follows original <http://www.libtorrent.org/reference.html documentation>
 so you can use it for referencing.
@@ -763,6 +763,8 @@ module Network.Libtorrent (
   , setEnforceNodeId
   , getIgnoreDarkInternet
   , setIgnoreDarkInternet
+  , minMemoryUsage
+  , highPerformanceSeed
     -- ** PeSettings
   , PeSettings
   , PeEncPolicy(..)
@@ -1311,46 +1313,47 @@ module Network.Libtorrent (
   , toList
   ) where
 
-import Prelude hiding (foldMap)
-import           Data.Text (Text)
-import qualified Data.Text as T
-import           Foreign.C.String (peekCAString)
-import qualified Language.C.Inline as C
-import qualified Language.C.Inline.Cpp as C
-import qualified Language.C.Inline.Unsafe as CU
-import           System.IO.Unsafe (unsafePerformIO)
+import           Data.Text                                         (Text)
+import qualified Data.Text                                         as T
+import           Foreign.C.String                                  (peekCAString)
+import qualified Language.C.Inline                                 as C
+import qualified Language.C.Inline.Cpp                             as C
+import qualified Language.C.Inline.Unsafe                          as CU
+import           Prelude                                           hiding
+                                                                    (foldMap)
+import           System.IO.Unsafe                                  (unsafePerformIO)
 
 
+import           Network.Libtorrent.Alert
+import           Network.Libtorrent.Bencode
+import           Network.Libtorrent.Bitfield
+import           Network.Libtorrent.CreateTorrent
+import           Network.Libtorrent.ErrorCode
+import           Network.Libtorrent.Exceptions
+import           Network.Libtorrent.Extensions
+import           Network.Libtorrent.FileStorage
+import           Network.Libtorrent.Inline                         (libtorrentCtx)
 import           Network.Libtorrent.PeerInfo
 import           Network.Libtorrent.PeerRequest
-import           Network.Libtorrent.TorrentHandle.BlockInfo
-import           Network.Libtorrent.TorrentHandle.PartialPieceInfo
-import           Network.Libtorrent.TorrentHandle
-import           Network.Libtorrent.TorrentHandle.TorrentStatus
-import           Network.Libtorrent.TorrentInfo.AnnounceEntry
-import           Network.Libtorrent.TorrentInfo
-import           Network.Libtorrent.Bencode
-import           Network.Libtorrent.String
+import           Network.Libtorrent.Rss
+import           Network.Libtorrent.Session
+import           Network.Libtorrent.Session.AddTorrentParams
 import           Network.Libtorrent.Session.DhtSettings
 import           Network.Libtorrent.Session.PeSettings
 import           Network.Libtorrent.Session.ProxySettings
 import           Network.Libtorrent.Session.SessionSettings
-import           Network.Libtorrent.Extensions
-import           Network.Libtorrent.Alert
-import           Network.Libtorrent.ErrorCode
-import           Network.Libtorrent.FileStorage
-import           Network.Libtorrent.Session.AddTorrentParams
-import           Network.Libtorrent.Session
 import           Network.Libtorrent.Session.SessionStatus
-import           Network.Libtorrent.CreateTorrent
-import           Network.Libtorrent.Exceptions
-import           Network.Libtorrent.Rss
-import           Network.Libtorrent.Bitfield
 import           Network.Libtorrent.Sha1Hash
+import           Network.Libtorrent.String
+import           Network.Libtorrent.TorrentHandle
+import           Network.Libtorrent.TorrentHandle.BlockInfo
+import           Network.Libtorrent.TorrentHandle.PartialPieceInfo
+import           Network.Libtorrent.TorrentHandle.TorrentStatus
+import           Network.Libtorrent.TorrentInfo
+import           Network.Libtorrent.TorrentInfo.AnnounceEntry
 import           Network.Libtorrent.Types
 import           Network.Libtorrent.Types.ArrayLike
-import           Network.Libtorrent.Vectors ()
-import           Network.Libtorrent.Inline (libtorrentCtx)
+import           Network.Libtorrent.Vectors                        ()
 
 C.context libtorrentCtx
 

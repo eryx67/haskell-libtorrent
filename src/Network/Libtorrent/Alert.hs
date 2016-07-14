@@ -1,12 +1,12 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies    #-}
-{-# LANGUAGE QuasiQuotes     #-}
-{-# LANGUAGE TupleSections        #-}
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE DefaultSignatures    #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
-{-# LANGUAGE GADTs                #-}
-{-# LANGUAGE RankNTypes           #-}
+{-# LANGUAGE DefaultSignatures   #-}
+{-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE GADTs               #-}
+{-# LANGUAGE QuasiQuotes         #-}
+{-# LANGUAGE RankNTypes          #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE TupleSections       #-}
+{-# LANGUAGE TypeFamilies        #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | <http://www.libtorrent.org/reference-Core.html#alert alert> structure for "Libtorrent"
 
@@ -222,38 +222,44 @@ module Network.Libtorrent.Alert (IsAlert(..)
                         , i2pAlertError
                         ) where
 
-import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Data.ByteString (ByteString)
-import qualified Data.ByteString as BS
-import           Data.Text (Text)
-import qualified Data.Text as T
-import           Data.Typeable (Proxy(..))
-import           Data.Word (Word64)
-import           Foreign.C.String (peekCString)
-import           Foreign.C.Types (CInt)
-import           Foreign.ForeignPtr ( ForeignPtr, withForeignPtr, castForeignPtr )
-import           Foreign.Marshal.Array (allocaArray, peekArray)
-import           Foreign.Ptr ( Ptr, nullPtr )
-import qualified Language.C.Inline as C
-import qualified Language.C.Inline.Cpp as C
-import qualified Language.C.Inline.Unsafe as CU
-import           System.IO.Unsafe (unsafePerformIO)
+import           Control.Monad.IO.Class                         (MonadIO,
+                                                                 liftIO)
+import           Data.ByteString                                (ByteString)
+import qualified Data.ByteString                                as BS
+import           Data.Text                                      (Text)
+import qualified Data.Text                                      as T
+import           Data.Typeable                                  (Proxy (..))
+import           Data.Word                                      (Word64)
+import           Foreign.C.String                               (peekCString)
+import           Foreign.C.Types                                (CInt)
+import           Foreign.ForeignPtr                             (ForeignPtr,
+                                                                 castForeignPtr,
+                                                                 withForeignPtr)
+import           Foreign.Marshal.Array                          (allocaArray,
+                                                                 peekArray)
+import           Foreign.Ptr                                    (Ptr, nullPtr)
+import qualified Language.C.Inline                              as C
+import qualified Language.C.Inline.Cpp                          as C
+import qualified Language.C.Inline.Unsafe                       as CU
+import           System.IO.Unsafe                               (unsafePerformIO)
 
 
 import           Network.Libtorrent.Bencode
 import           Network.Libtorrent.ErrorCode
 import           Network.Libtorrent.Inline
 import           Network.Libtorrent.Internal
-import           Network.Libtorrent.PeerRequest (PeerRequest)
-import           Network.Libtorrent.Rss (FeedHandle, FeedItem)
+import           Network.Libtorrent.PeerRequest                 (PeerRequest)
+import           Network.Libtorrent.Rss                         (FeedHandle,
+                                                                 FeedItem)
 import           Network.Libtorrent.Session.AddTorrentParams
-import           Network.Libtorrent.Sha1Hash (Sha1Hash)
+import           Network.Libtorrent.Sha1Hash                    (Sha1Hash)
 import           Network.Libtorrent.String
+import           Network.Libtorrent.TH                          (defineStdVector)
 import           Network.Libtorrent.TorrentHandle
-import           Network.Libtorrent.TorrentHandle.TorrentStatus (TorrentStatus, TorrentState)
+import           Network.Libtorrent.TorrentHandle.TorrentStatus (TorrentState,
+                                                                 TorrentStatus)
 import           Network.Libtorrent.Types
-import           Network.Libtorrent.Types.ArrayLike (ArrayLike(..))
-import           Network.Libtorrent.TH (defineStdVector)
+import           Network.Libtorrent.Types.ArrayLike             (ArrayLike (..))
 
 
 C.context libtorrentCtx
@@ -276,9 +282,10 @@ $(defineStdVector "torrent_status" "VectorTorrentStatus" ''C'TorrentStatus ''C'V
 
 $(defineStdVector "torrent_handle" "VectorTorrentHandle" ''C'TorrentHandle ''C'VectorTorrentHandle ''TorrentHandle)
 
+-- | Integer counterparts of this enum are one time smaller than libtorrent
+-- equivalents to allow  its usage in 'BitFlags'.
 data AlertCategory =
-  AlertCategoryNone
-  | ErrorNotification
+  ErrorNotification
   | PeerNotification
   | PortMappingNotification
   | StorageNotification
@@ -298,7 +305,6 @@ data AlertCategory =
   | DhtOperationNotification
   | PortMappingLogNotification
   | PickerLogNotification
-  | AllCategories
   deriving (Show, Enum, Bounded, Eq)
 
 newtype SubAlert a = SubAlert { unSubAlert :: a }
@@ -416,7 +422,7 @@ alertMessage ho =
 alertCategory :: MonadIO m => IsAlert a => a -> m (BitFlags AlertCategory)
 alertCategory ho =
   liftIO . withPtr (toAlert ho) $ \hoPtr ->
-  toEnum . fromIntegral <$> [CU.exp| int { $(alert * hoPtr)->category() } |]
+  toEnum . max 0 . pred . fromIntegral <$> [CU.exp| int { $(alert * hoPtr)->category() } |]
 
 -- | Try to handle an alert of type @a@.
 handleAlert :: MonadIO m => IsAlert a => Alert -> (a -> m r) -> m (Maybe r)

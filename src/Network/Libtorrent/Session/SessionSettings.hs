@@ -1,8 +1,8 @@
-{-# LANGUAGE TemplateHaskell     #-}
-{-# LANGUAGE TypeFamilies        #-}
-{-# LANGUAGE QuasiQuotes         #-}
-{-# LANGUAGE TupleSections       #-}
-{-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TupleSections     #-}
+{-# LANGUAGE TypeFamilies      #-}
 -- | <http://www.libtorrent.org/reference-Core.html#session_settings session_settings> for "Libtorrent"
 
 module Network.Libtorrent.Session.SessionSettings (SessionSettings
@@ -362,28 +362,31 @@ module Network.Libtorrent.Session.SessionSettings (SessionSettings
                                         , setInactiveDownRate
                                         , getInactiveUpRate
                                         , setInactiveUpRate
+                                        , minMemoryUsage
+                                        , highPerformanceSeed
                                         ) where
 
-import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Data.Text (Text)
-import qualified Data.Text.Foreign as TF
-import           Foreign.C.Types (CInt)
-import           Foreign.ForeignPtr ( ForeignPtr, withForeignPtr )
-import           Foreign.Marshal.Utils (toBool, fromBool)
-import qualified Language.C.Inline as C
-import qualified Language.C.Inline.Cpp as C
-import qualified Language.C.Inline.Unsafe as CU
+import           Control.Monad.IO.Class      (MonadIO, liftIO)
+import           Data.Text                   (Text)
+import qualified Data.Text.Foreign           as TF
+import           Foreign.C.Types             (CInt)
+import           Foreign.ForeignPtr          (ForeignPtr, withForeignPtr)
+import           Foreign.Marshal.Utils       (fromBool, toBool)
+import qualified Language.C.Inline           as C
+import qualified Language.C.Inline.Cpp       as C
+import qualified Language.C.Inline.Unsafe    as CU
 
 
 import           Network.Libtorrent.Inline
 import           Network.Libtorrent.Internal
-import           Network.Libtorrent.Types
 import           Network.Libtorrent.String
+import           Network.Libtorrent.Types
 
 
 C.context libtorrentCtx
 
 C.include "<libtorrent/session_settings.hpp>"
+C.include "<libtorrent/session.hpp>"
 
 C.using "namespace libtorrent"
 C.using "namespace std"
@@ -2264,3 +2267,11 @@ setInactiveUpRate :: MonadIO m =>  SessionSettings -> CInt -> m ()
 setInactiveUpRate ho val =
   liftIO . withPtr ho $ \hoPtr ->
                  [CU.exp| void { $(session_settings * hoPtr)->inactive_up_rate = $(int val)} |]
+
+minMemoryUsage :: MonadIO m =>  m SessionSettings
+minMemoryUsage =
+  liftIO $ fromPtr [CU.exp| session_settings * { new session_settings(min_memory_usage()) } |]
+
+highPerformanceSeed :: MonadIO m =>  m SessionSettings
+highPerformanceSeed =
+  liftIO $ fromPtr [CU.exp| session_settings * { new session_settings(high_performance_seed()) } |]
