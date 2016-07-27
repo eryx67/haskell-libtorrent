@@ -897,7 +897,7 @@ getSeedChokingAlgorithm ho =
   liftIO . withPtr ho $ \hoPtr ->
   (toEnum . fromIntegral) <$> [CU.exp| int { $(session_settings * hoPtr)->seed_choking_algorithm } |]
 
-setSeedChokingAlgorithm :: MonadIO m =>  SessionSettings -> CInt -> m ()
+setSeedChokingAlgorithm :: MonadIO m =>  SessionSettings -> SeedChokingAlgorithm -> m ()
 setSeedChokingAlgorithm ho val =
   liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromIntegral $ fromEnum val
@@ -992,7 +992,7 @@ getDiskIoReadMode ho =
   liftIO . withPtr ho $ \hoPtr ->
   (toEnum . fromIntegral) <$> [CU.exp| int { $(session_settings * hoPtr)->disk_io_read_mode } |]
 
-setDiskIoReadMode :: MonadIO m =>  SessionSettings -> CInt -> m ()
+setDiskIoReadMode :: MonadIO m =>  SessionSettings -> IoBufferMode -> m ()
 setDiskIoReadMode ho val =
   liftIO . withPtr ho $ \hoPtr -> do
   let val' = fromIntegral $ fromEnum val
