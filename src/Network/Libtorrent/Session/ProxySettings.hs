@@ -1,8 +1,9 @@
-{-# LANGUAGE TemplateHaskell     #-}
-{-# LANGUAGE TypeFamilies        #-}
-{-# LANGUAGE QuasiQuotes         #-}
-{-# LANGUAGE TupleSections       #-}
-{-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TupleSections     #-}
+{-# LANGUAGE TypeFamilies      #-}
 -- | <http://www.libtorrent.org/reference-Core.html#proxy_settings proxy_settings> for "Libtorrent"
 
 module Network.Libtorrent.Session.ProxySettings (ProxySettings(..)
@@ -24,20 +25,21 @@ module Network.Libtorrent.Session.ProxySettings (ProxySettings(..)
                                      , setProxyPeerConnections
                                      ) where
 
-import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Data.Text (Text)
-import qualified Data.Text.Foreign as TF
-import           Data.Word (Word16)
-import           Foreign.ForeignPtr ( ForeignPtr, withForeignPtr )
-import           Foreign.Marshal.Utils (toBool, fromBool)
-import qualified Language.C.Inline as C
-import qualified Language.C.Inline.Cpp as C
-import qualified Language.C.Inline.Unsafe as CU
+import           Control.Monad.IO.Class      (MonadIO, liftIO)
+import           Data.Text                   (Text)
+import qualified Data.Text.Foreign           as TF
+import           Data.Word                   (Word16)
+import           Foreign.ForeignPtr          (ForeignPtr, withForeignPtr)
+import           Foreign.Marshal.Utils       (fromBool, toBool)
+import           GHC.Generics                (Generic)
+import qualified Language.C.Inline           as C
+import qualified Language.C.Inline.Cpp       as C
+import qualified Language.C.Inline.Unsafe    as CU
 
 import           Network.Libtorrent.Inline
 import           Network.Libtorrent.Internal
-import           Network.Libtorrent.Types
 import           Network.Libtorrent.String
+import           Network.Libtorrent.Types
 
 C.context libtorrentCtx
 
@@ -54,7 +56,7 @@ data ProxyType =
   | ProxyHttp
   | ProxyHttpPw
   | I2pProxy
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Generic)
 
 newtype ProxySettings = ProxySettings { unProxySettings :: ForeignPtr (CType ProxySettings)}
 

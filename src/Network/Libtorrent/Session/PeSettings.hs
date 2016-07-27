@@ -1,8 +1,9 @@
-{-# LANGUAGE TemplateHaskell     #-}
-{-# LANGUAGE TypeFamilies        #-}
-{-# LANGUAGE QuasiQuotes         #-}
-{-# LANGUAGE TupleSections       #-}
-{-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TupleSections     #-}
+{-# LANGUAGE TypeFamilies      #-}
 -- | <http://www.libtorrent.org/reference-Core.html#pe_settings pe_settings> for "Libtorrent"
 
 module Network.Libtorrent.Session.PeSettings (PeSettings
@@ -20,13 +21,13 @@ module Network.Libtorrent.Session.PeSettings (PeSettings
                                              , setPreferRc4
                                              ) where
 
-import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Foreign.ForeignPtr ( ForeignPtr, withForeignPtr )
-import           Foreign.Marshal.Utils (toBool, fromBool)
-import qualified Language.C.Inline as C
-import qualified Language.C.Inline.Cpp as C
-import qualified Language.C.Inline.Unsafe as CU
-
+import           Control.Monad.IO.Class      (MonadIO, liftIO)
+import           Foreign.ForeignPtr          (ForeignPtr, withForeignPtr)
+import           Foreign.Marshal.Utils       (fromBool, toBool)
+import           GHC.Generics                (Generic)
+import qualified Language.C.Inline           as C
+import qualified Language.C.Inline.Cpp       as C
+import qualified Language.C.Inline.Unsafe    as CU
 
 import           Network.Libtorrent.Inline
 import           Network.Libtorrent.Internal
@@ -44,14 +45,14 @@ data PeEncPolicy =
   EncPolicyForced
   | EncPolicyEnabled
   | EncPolicyDisabled
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Generic)
 
 data PeEncLevel =
   EncLevelNone
   | EncLevelPlaintext
   | EncLevelRc4
   | EncLevelBoth
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Generic)
 
 newtype PeSettings = PeSettings { unPeSettings :: ForeignPtr (CType PeSettings)}
 

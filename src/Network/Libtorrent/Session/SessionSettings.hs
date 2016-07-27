@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric     #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE QuasiQuotes       #-}
 {-# LANGUAGE TemplateHaskell   #-}
@@ -372,6 +373,7 @@ import qualified Data.Text.Foreign           as TF
 import           Foreign.C.Types             (CInt)
 import           Foreign.ForeignPtr          (ForeignPtr, withForeignPtr)
 import           Foreign.Marshal.Utils       (fromBool, toBool)
+import           GHC.Generics                (Generic)
 import qualified Language.C.Inline           as C
 import qualified Language.C.Inline.Cpp       as C
 import qualified Language.C.Inline.Unsafe    as CU
@@ -394,37 +396,37 @@ C.using "namespace std"
 data SuggestMode =
   NoPieceSuggestions
   | SuggestReadCache
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Generic)
 
 data ChokingAlgorithm =
   FixedSlotsChoker
   | AutoExpandChoker
   | RateBasedChoker
   | BittyrantChoker
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Generic)
 
 data SeedChokingAlgorithm =
   RoundRobin
   | FastestUpload
   | AntiLeech
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Generic)
 
 data IoBufferMode =
   EnableOsCache
   | DisableOsCacheForAlignedFiles
   | DisableOsCache
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Generic)
 
 data DiskCacheAlgo =
   Lru
   | LargestContiguous
   | AvoidReadback
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Generic)
 
 data BandwidthMixedAlgo =
   PreferTcp
   | PeerProportional
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Generic)
 
 
 newtype SessionSettings = SessionSettings { unSessionSettings :: ForeignPtr (CType SessionSettings)}

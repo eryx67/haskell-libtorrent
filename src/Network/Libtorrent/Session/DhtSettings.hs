@@ -1,8 +1,8 @@
-{-# LANGUAGE TemplateHaskell     #-}
-{-# LANGUAGE TypeFamilies        #-}
-{-# LANGUAGE QuasiQuotes         #-}
-{-# LANGUAGE TupleSections       #-}
-{-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TupleSections     #-}
+{-# LANGUAGE TypeFamilies      #-}
 -- | <http://www.libtorrent.org/reference-Core.html#dht_settings dht_settings> for "Libtorrent"
 
 module Network.Libtorrent.Session.DhtSettings (DhtSettings
@@ -36,13 +36,13 @@ module Network.Libtorrent.Session.DhtSettings (DhtSettings
                                         , setIgnoreDarkInternet
                                         ) where
 
-import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Foreign.C.Types (CInt)
-import           Foreign.ForeignPtr ( ForeignPtr, withForeignPtr )
-import           Foreign.Marshal.Utils (toBool, fromBool)
-import qualified Language.C.Inline as C
-import qualified Language.C.Inline.Cpp as C
-import qualified Language.C.Inline.Unsafe as CU
+import           Control.Monad.IO.Class      (MonadIO, liftIO)
+import           Foreign.C.Types             (CInt)
+import           Foreign.ForeignPtr          (ForeignPtr, withForeignPtr)
+import           Foreign.Marshal.Utils       (fromBool, toBool)
+import qualified Language.C.Inline           as C
+import qualified Language.C.Inline.Cpp       as C
+import qualified Language.C.Inline.Unsafe    as CU
 
 import           Network.Libtorrent.Inline
 import           Network.Libtorrent.Internal
