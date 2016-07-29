@@ -1,4 +1,5 @@
 {-# LANGUAGE DefaultSignatures   #-}
+{-# LANGUAGE DeriveGeneric       #-}
 {-# LANGUAGE FlexibleInstances   #-}
 {-# LANGUAGE GADTs               #-}
 {-# LANGUAGE QuasiQuotes         #-}
@@ -238,11 +239,11 @@ import           Foreign.ForeignPtr                             (ForeignPtr,
 import           Foreign.Marshal.Array                          (allocaArray,
                                                                  peekArray)
 import           Foreign.Ptr                                    (Ptr, nullPtr)
+import           GHC.Generics                                   (Generic)
 import qualified Language.C.Inline                              as C
 import qualified Language.C.Inline.Cpp                          as C
 import qualified Language.C.Inline.Unsafe                       as CU
 import           System.IO.Unsafe                               (unsafePerformIO)
-
 
 import           Network.Libtorrent.Bencode
 import           Network.Libtorrent.ErrorCode
@@ -305,7 +306,7 @@ data AlertCategory =
   | DhtOperationNotification
   | PortMappingLogNotification
   | PickerLogNotification
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Generic)
 
 newtype SubAlert a = SubAlert { unSubAlert :: a }
 
