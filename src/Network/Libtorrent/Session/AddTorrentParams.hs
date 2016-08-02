@@ -1,6 +1,6 @@
+{-# LANGUAGE QuasiQuotes     #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TypeFamilies    #-}
 -- | The 'AddTorrentParams' is a parameter pack for adding torrents to
 -- a 'Network.Libtorrent.Session'.
 -- See <http://www.libtorrent.org/reference-Core.html#add-torrent-params add_torrent_params>.
@@ -13,8 +13,10 @@ module Network.Libtorrent.Session.AddTorrentParams (AddTorrentParams
                                            , newAddTorrentParams
                                            , setFlags
                                            , getFlags
-                                           , setName
-                                           , setSavePath
+                                           , setTorrentName
+                                           , getTorrentName
+                                           , setTorrentSavePath
+                                           , getTorrentSavePath
                                            , getTrackers
                                            , setTrackers
                                            , getUrlSeeds
@@ -45,15 +47,15 @@ module Network.Libtorrent.Session.AddTorrentParams (AddTorrentParams
                                            , setDownloadLimit
                                            ) where
 
-import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Data.ByteString (ByteString)
-import qualified Data.ByteString as BS
-import           Data.Text (Text)
-import qualified Data.Text.Foreign as TF
-import           Foreign.ForeignPtr ( ForeignPtr, withForeignPtr )
-import qualified Language.C.Inline as C
-import qualified Language.C.Inline.Cpp as C
-import qualified Language.C.Inline.Unsafe as CU
+import           Control.Monad.IO.Class         (MonadIO, liftIO)
+import           Data.ByteString                (ByteString)
+import qualified Data.ByteString                as BS
+import           Data.Text                      (Text)
+import qualified Data.Text.Foreign              as TF
+import           Foreign.ForeignPtr             (ForeignPtr, withForeignPtr)
+import qualified Language.C.Inline              as C
+import qualified Language.C.Inline.Cpp          as C
+import qualified Language.C.Inline.Unsafe       as CU
 
 
 import           Network.Libtorrent.Inline
@@ -62,7 +64,7 @@ import           Network.Libtorrent.Sha1Hash
 import           Network.Libtorrent.String
 import           Network.Libtorrent.TorrentInfo
 import           Network.Libtorrent.Types
-import           Network.Libtorrent.Vectors ()
+import           Network.Libtorrent.Vectors     ()
 
 C.context libtorrentCtx
 
@@ -162,8 +164,8 @@ getFlags ho =
   toEnum . fromIntegral <$> [CU.exp| int { $(add_torrent_params * hoPtr)->flags } |]
 
 
-setName :: MonadIO m =>  AddTorrentParams -> Text -> m ()
-setName atp nm =
+setTorrentName :: MonadIO m =>  AddTorrentParams -> Text -> m ()
+setTorrentName atp nm =
   liftIO . withPtr atp $ \atPtr -> do
   TF.withCStringLen nm $ \(ptr, len) -> do
     let csize = fromIntegral len
@@ -173,8 +175,14 @@ setName atp nm =
       }
     |]
 
-setSavePath :: MonadIO m =>  AddTorrentParams -> Text -> m ()
-setSavePath atp path =
+getTorrentName :: MonadIO m =>  AddTorrentParams -> m Text
+getTorrentName ho =
+  liftIO . withPtr ho $ \hoPtr -> do
+  res <- fromPtr [CU.exp| string * { new std::string($(add_torrent_params * hoPtr)->name) } |]
+  stdStringToText res
+
+setTorrentSavePath :: MonadIO m =>  AddTorrentParams -> Text -> m ()
+setTorrentSavePath atp path =
   liftIO . withPtr atp $ \atPtr -> do
   TF.withCStringLen path $ \(ptr, len) -> do
     let csize = fromIntegral len
@@ -183,6 +191,12 @@ setSavePath atp path =
         $(add_torrent_params * atPtr)->save_path = val;
       }
     |]
+
+getTorrentSavePath :: MonadIO m =>  AddTorrentParams -> m Text
+getTorrentSavePath ho =
+  liftIO . withPtr ho $ \hoPtr -> do
+  res <- fromPtr [CU.exp| string * { new std::string($(add_torrent_params * hoPtr)->save_path) } |]
+  stdStringToText res
 
 getTrackers :: MonadIO m =>  AddTorrentParams -> m (StdVector StdString)
 getTrackers ho =

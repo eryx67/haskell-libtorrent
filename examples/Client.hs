@@ -150,7 +150,7 @@ main = runStderrLoggingT $ do
       setStorageMode atp StorageModeSparse
       (BitFlags atpFlags) <- getFlags atp
       setFlags atp  . BitFlags . union [AutoManaged, DuplicateIsError] $ atpFlags \\ [Paused]
-      setSavePath atp _savePath
+      setTorrentSavePath atp _savePath
       setMaxConnections atp 60
       setMaxUploads atp (-1)
       return atp

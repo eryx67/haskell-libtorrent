@@ -1062,8 +1062,10 @@ module Network.Libtorrent (
   , newAddTorrentParams
   , setFlags
   , getFlags
-  , setName
-  , setSavePath
+  , setTorrentName
+  , getTorrentName
+  , setTorrentSavePath
+  , getTorrentSavePath
   , getTrackers
   , setTrackers
   , getUrlSeeds

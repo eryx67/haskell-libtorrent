@@ -1,28 +1,28 @@
+{-# LANGUAGE FlexibleContexts    #-}
 {-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE RecordWildCards     #-}
-{-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TupleSections       #-}
 -- |
 module Main where
 
-import           Control.Concurrent (threadDelay)
-import           Control.Monad (when, forM_)
+import           Control.Concurrent  (threadDelay)
+import           Control.Monad       (forM_, when)
 import           Control.Monad.Loops (untilM_)
-import           Data.Char (toLower, isUpper)
+import           Data.Char           (isUpper, toLower)
 import           Data.Default
-import           Data.Text (Text)
-import qualified Data.Text as T
-import qualified Data.Text.Lazy.IO as TL
+import           Data.Text           (Text)
+import qualified Data.Text           as T
+import qualified Data.Text.Lazy.IO   as TL
 import           Formatting
 import           Options.Applicative
-import           System.IO (hFlush, stdout)
+import           System.IO           (hFlush, stdout)
 
 import           Network.Libtorrent
 
 data Config = Config {
-  _source         :: !Text
+  _source :: !Text
   }
             deriving Show
 
@@ -33,14 +33,14 @@ instance Default Config where
 
 main :: IO ()
 main = do
-  cfg@Config{..} <- execParser opts
+  Config{..} <- execParser opts
 
   ses <- newSession
   listenOn ses (6881, 6891) Nothing
 
   infoSrc <- TorrentInfoSrc <$> newTorrentInfo _source
   atp <- newAddTorrentParams infoSrc
-  setSavePath atp "."
+  setTorrentSavePath atp "."
   th <- addTorrent ses atp
   ts' <- torrentStatus th Nothing
   name <- getName ts'
