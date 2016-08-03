@@ -347,6 +347,8 @@ module Network.Libtorrent (
   , bencodedData
   -- * Standard Library
   , StdString
+  , StdVector
+  , StdDeque
   , unStdString
   , stdStringToText
   , textToStdString
