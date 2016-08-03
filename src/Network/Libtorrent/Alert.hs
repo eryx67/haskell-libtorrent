@@ -306,7 +306,7 @@ data AlertCategory =
   | DhtOperationNotification
   | PortMappingLogNotification
   | PickerLogNotification
-  deriving (Show, Enum, Bounded, Eq, Generic)
+  deriving (Show, Enum, Bounded, Eq, Ord, Generic)
 
 newtype SubAlert a = SubAlert { unSubAlert :: a }
 

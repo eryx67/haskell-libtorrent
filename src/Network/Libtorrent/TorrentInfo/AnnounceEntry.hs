@@ -1,8 +1,8 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies    #-}
-{-# LANGUAGE QuasiQuotes     #-}
-{-# LANGUAGE TupleSections   #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TupleSections     #-}
+{-# LANGUAGE TypeFamilies      #-}
 -- | <http://www.libtorrent.org/reference-Core.html#announce-entry announce_entry> structure for "Libtorrent"
 
 module Network.Libtorrent.TorrentInfo.AnnounceEntry( TrackerSource(..)
@@ -37,16 +37,16 @@ module Network.Libtorrent.TorrentInfo.AnnounceEntry( TrackerSource(..)
                                            , getSendStats
                                            ) where
 
-import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Data.Text (Text)
-import qualified Data.Text.Foreign as TF
-import           Data.Word (Word64, Word8)
-import           Foreign.C.Types (CInt)
-import           Foreign.ForeignPtr ( ForeignPtr, withForeignPtr )
-import           Foreign.Marshal.Utils (toBool)
-import qualified Language.C.Inline as C
-import qualified Language.C.Inline.Cpp as C
-import qualified Language.C.Inline.Unsafe as CU
+import           Control.Monad.IO.Class       (MonadIO, liftIO)
+import           Data.Text                    (Text)
+import qualified Data.Text.Foreign            as TF
+import           Data.Word                    (Word64, Word8)
+import           Foreign.C.Types              (CInt)
+import           Foreign.ForeignPtr           (ForeignPtr, withForeignPtr)
+import           Foreign.Marshal.Utils        (toBool)
+import qualified Language.C.Inline            as C
+import qualified Language.C.Inline.Cpp        as C
+import qualified Language.C.Inline.Unsafe     as CU
 
 import           Network.Libtorrent.ErrorCode
 import           Network.Libtorrent.Inline
@@ -67,7 +67,7 @@ data TrackerSource =
   | SourceClient
   | SourceMagnetLink
   | SourceTex
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Ord)
 
 newtype AnnounceEntry = AnnounceEntry { unAnnounceEntry :: ForeignPtr (CType AnnounceEntry)}
 

@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric   #-}
 {-# LANGUAGE QuasiQuotes     #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies    #-}
@@ -52,7 +53,11 @@ import           Data.ByteString                (ByteString)
 import qualified Data.ByteString                as BS
 import           Data.Text                      (Text)
 import qualified Data.Text.Foreign              as TF
+import           Data.Vector.Storable           (Vector, unsafeFromForeignPtr0)
+import           Data.Word                      (Word8)
+import           Foreign.Concurrent             (newForeignPtr)
 import           Foreign.ForeignPtr             (ForeignPtr, withForeignPtr)
+import           GHC.Generics                   (Generic)
 import qualified Language.C.Inline              as C
 import qualified Language.C.Inline.Cpp          as C
 import qualified Language.C.Inline.Unsafe       as CU
@@ -103,13 +108,13 @@ data AddTorrentFlags =
   | Pinned
   | MergeResumeHttpSeeds
   | StopWhenReady
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Ord, Generic)
 
 -- | Flags for <http://www.libtorrent.org/reference-Storage.html#storage_mode_t storage_mode>
 data StorageMode =
   StorageModeAllocate
   | StorageModeSparse
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Generic)
 
 newtype AddTorrentParams = AddTorrentParams { unAddTorrentParams :: ForeignPtr (CType AddTorrentParams)}
 
@@ -254,25 +259,26 @@ setStorageMode ho val =
 -- storage_constructor_type storage;
 -- void* userdata;
 
-getFilePriorities :: MonadIO m =>  AddTorrentParams -> m ByteString
+getFilePriorities :: MonadIO m =>  AddTorrentParams -> m (Vector Word8)
 getFilePriorities ho =
   liftIO . withPtr ho $ \hoPtr -> do
-  (clen, cstr) <- C.withPtrs_ $ \(clenPtr, cstrPtr) -> do
-    [CU.block| void {
-        std::vector<uint8_t> fp = $(add_torrent_params * hoPtr)->file_priorities;
-        *$(size_t * clenPtr) = fp.size();
-        *$(char ** cstrPtr) = (char *) fp.data();
-       }
-    |]
-  BS.packCStringLen (cstr, fromIntegral clen)
+  (dataSize, dataPtr) <- C.withPtrs_ $ \(dataSizePtr, dataPtrPtr) -> do
+   [CU.block| void {
+       std::vector<uint8_t> v = $(add_torrent_params * hoPtr)->file_priorities;
+       *$(uint8_t ** dataPtrPtr) = new uint8_t[v.size()];
+       std::copy(v.data(), v.data() + v.size(), *$(uint8_t ** dataPtrPtr));
+       *$(int * dataSizePtr) = v.size();
+      }
+   |]
+  dataFPtr <- newForeignPtr dataPtr $ [CU.exp| void {delete $(uint8_t * dataPtr)} |]
+  return $ unsafeFromForeignPtr0 dataFPtr (fromIntegral dataSize)
 
-setFilePriorities :: MonadIO m =>  AddTorrentParams -> ByteString -> m ()
+setFilePriorities :: MonadIO m =>  AddTorrentParams -> (Vector Word8) -> m ()
 setFilePriorities ho val =
   liftIO . withPtr ho $ \hoPtr ->
   [CU.block| void {
-      uint8_t *bstart = (uint8_t *) $bs-ptr:val;
-      uint8_t *bend = (uint8_t *) $bs-ptr:val + $bs-len:val;
-      $(add_torrent_params * hoPtr)->file_priorities = std::vector<uint8_t>(bstart, bend);
+      std::vector<uint8_t> v($vec-ptr:(uint8_t * val), $vec-ptr:(uint8_t * val) + $vec-len:val);
+      $(add_torrent_params * hoPtr)->file_priorities = v;
      }
   |]
 

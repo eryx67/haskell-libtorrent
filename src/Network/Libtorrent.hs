@@ -1313,6 +1313,7 @@ module Network.Libtorrent (
   , foldMap
   , fold
   , toList
+  , fromList
   ) where
 
 import           Data.Text                                         (Text)

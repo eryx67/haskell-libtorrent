@@ -1,9 +1,9 @@
-{-# LANGUAGE TemplateHaskell      #-}
-{-# LANGUAGE TypeFamilies         #-}
-{-# LANGUAGE QuasiQuotes          #-}
-{-# LANGUAGE TupleSections        #-}
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TupleSections     #-}
+{-# LANGUAGE TypeFamilies      #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | <http://www.libtorrent.org/reference-Storage.html#file_storage file_storage> structure for "Libtorrent"
 module Network.Libtorrent.FileStorage (FileEntry(..)
@@ -58,24 +58,25 @@ module Network.Libtorrent.FileStorage (FileEntry(..)
                               , fileIndexAtOffset
                               ) where
 
-import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Data.ByteString (ByteString)
-import           Data.Maybe (fromMaybe)
-import           Data.Text (Text)
-import           Foreign.C.Types (CInt)
-import           Foreign.ForeignPtr ( ForeignPtr, withForeignPtr )
-import           Foreign.Marshal.Utils (toBool)
-import qualified Language.C.Inline as C
-import qualified Language.C.Inline.Cpp as C
-import qualified Language.C.Inline.Unsafe as CU
+import           Control.Monad.IO.Class                   (MonadIO, liftIO)
+import           Data.ByteString                          (ByteString)
+import           Data.Maybe                               (fromMaybe)
+import           Data.Text                                (Text)
+import           Foreign.C.Types                          (CInt)
+import           Foreign.ForeignPtr                       (ForeignPtr,
+                                                           withForeignPtr)
+import           Foreign.Marshal.Utils                    (toBool)
+import qualified Language.C.Inline                        as C
+import qualified Language.C.Inline.Cpp                    as C
+import qualified Language.C.Inline.Unsafe                 as CU
 
 import           Network.Libtorrent.FileStorage.FileSlice
 import           Network.Libtorrent.Inline
 import           Network.Libtorrent.Internal
-import           Network.Libtorrent.PeerRequest (PeerRequest)
+import           Network.Libtorrent.PeerRequest           (PeerRequest)
 import           Network.Libtorrent.Sha1Hash
 import           Network.Libtorrent.String
-import           Network.Libtorrent.TH (defineStdVector)
+import           Network.Libtorrent.TH                    (defineStdVector)
 import           Network.Libtorrent.Types
 
 
@@ -95,14 +96,14 @@ data FileStorageFlags =
   | AttributeHidden
   | AttributeExecutable
   | AttributeSymlink
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Ord)
 
 data FileFlags =
   FlagPadFile
   | FlagHidden
   | FlagExecutable
   | FlagSymlink
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Ord)
 
 newtype FileEntry = FileEntry { unFileEntry :: ForeignPtr (CType FileEntry)}
 
@@ -308,7 +309,7 @@ fileStorageHash ho idx =
   liftIO . withPtr ho $ \hoPtr -> do
   h <- fromPtr [C.exp| sha1_hash * { new sha1_hash($(file_storage * hoPtr)->hash($(int idx))) } |]
   sha1HashToByteString h
-  
+
 fileName :: MonadIO m =>  FileStorage -> CInt -> m Text
 fileName ho idx =
   liftIO . withPtr ho $ \hoPtr -> do

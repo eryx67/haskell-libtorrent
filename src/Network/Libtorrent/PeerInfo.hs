@@ -155,7 +155,7 @@ data PeerFlags =
   | SslSocket
   | Rc4Encrypted
   | PlaintextEncrypted
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Ord)
 
 data PeerSourceFlags =
   Tracker
@@ -164,13 +164,13 @@ data PeerSourceFlags =
   | Lsd
   | ResumeData
   | Incoming
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Ord)
 
 data ConnectionType =
   StandardBittorrent
   | WebSeed
   | HttpSeed
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Ord)
 
 
 data BwState =

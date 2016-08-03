@@ -135,6 +135,7 @@ executable libtorrent-client
                      , lifted-base
                      , monad-control
                      , optparse-applicative
+                     , containers
   default-language:    Haskell2010
 
 executable libtorrent-simple-client
@@ -150,6 +151,7 @@ executable libtorrent-simple-client
                      , monad-loops
                      , monad-control
                      , optparse-applicative
+                     , containers
   default-language:    Haskell2010
 
 executable libtorrent-rss-reader
@@ -167,6 +169,7 @@ executable libtorrent-rss-reader
                      , monad-control
                      , monad-loops
                      , optparse-applicative
+                     , containers
   default-language:    Haskell2010
 
 executable libtorrent-make-torrent
@@ -187,6 +190,7 @@ executable libtorrent-make-torrent
                      , easy-file
                      , filepath
                      , bytestring
+                     , containers
   default-language:    Haskell2010
 
 test-suite libtorrent-test
@@ -197,6 +201,7 @@ test-suite libtorrent-test
                      , libtorrent
                      , hspec
                      , async
+                     , containers
   ghc-options:      -Wall -fwarn-incomplete-patterns -threaded -funbox-strict-fields -O2 -rtsopts
   cc-options: -Wall -O2 -std=c++11
   pkgconfig-depends: libtorrent-rasterbar >= 1.0.9

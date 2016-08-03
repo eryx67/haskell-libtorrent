@@ -134,7 +134,7 @@ $(defineStdVector "partial_piece_info" "VectorPartialPieceInfo" ''C'PartialPiece
 
 data Flags =
       OverwriteExisting
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Ord)
 
 data StatusFlags =
   QueryDistributedCopies
@@ -145,25 +145,25 @@ data StatusFlags =
   | QueryTorrentFile
   | QueryName
   | QuerySavePath
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Ord)
 
 data DeadlineFlags =
   AlertWhenAvailable
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Ord)
 
 data FileProgressFlags =
   PieceGranularity
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Ord)
 
 data PauseFlags =
   GracefulPause
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Ord)
 
 data SaveResumeFlags =
   FlushDiskCache
   | SaveInfoDict
   | OnlyIfModified
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Ord)
 
 newtype TorrentHandle = TorrentHandle { unTorrentHandle :: ForeignPtr (CType TorrentHandle)}
 

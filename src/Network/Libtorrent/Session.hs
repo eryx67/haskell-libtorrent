@@ -148,25 +148,25 @@ data SaveStateFlags =
   | SaveI2pProxy
   | SaveEncryptionSettings
   | SaveFeeds
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Ord)
 
 data ListenOnFlags =
   ListenNoSystemPort
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Ord)
 
 data RemoveTorrentOptions =
   DeleteFiles
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Ord)
 
 data SessionFlags =
   AddDefaultPlugins
   | StartDefaultFeatures
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Ord)
 
 data ProtocolType =
   Udp
   | Tcp
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Ord)
 
 newtype Session = Session { unSession :: ForeignPtr (CType Session)}
 

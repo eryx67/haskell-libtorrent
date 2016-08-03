@@ -1,8 +1,9 @@
-{-# LANGUAGE TemplateHaskell      #-}
-{-# LANGUAGE TypeFamilies         #-}
-{-# LANGUAGE QuasiQuotes          #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
-{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE OverloadedLists     #-}
+{-# LANGUAGE QuasiQuotes         #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE TypeFamilies        #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | <http://www.libtorrent.org/reference-Create_Torrents.html#create_torrent create_torrent> structure for "Libtorrent"
 
@@ -29,25 +30,25 @@ module Network.Libtorrent.CreateTorrent( CreateTorrent(..)
                                , createTorrentSetPieceHashes
                                ) where
 
-import           Control.Monad (void)
-import           Control.Monad.Catch (bracket)
-import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Data.Maybe (fromMaybe)
-import           Data.Text (Text)
-import qualified Data.Text as T
-import           Foreign.C.String (withCString)
-import           Foreign.ForeignPtr ( ForeignPtr, withForeignPtr )
-import           Foreign.Marshal.Utils (toBool, fromBool)
-import           Foreign.Ptr ( freeHaskellFunPtr )
-import qualified Language.C.Inline as C
-import qualified Language.C.Inline.Cpp as C
-import           System.Mem.Weak (mkWeak)
+import           Control.Monad                  (void)
+import           Control.Monad.Catch            (bracket)
+import           Control.Monad.IO.Class         (MonadIO, liftIO)
+import           Data.Maybe                     (fromMaybe)
+import           Data.Text                      (Text)
+import qualified Data.Text                      as T
+import           Foreign.C.String               (withCString)
+import           Foreign.ForeignPtr             (ForeignPtr, withForeignPtr)
+import           Foreign.Marshal.Utils          (fromBool, toBool)
+import           Foreign.Ptr                    (freeHaskellFunPtr)
+import qualified Language.C.Inline              as C
+import qualified Language.C.Inline.Cpp          as C
+import           System.Mem.Weak                (mkWeak)
 
 
 import           Network.Libtorrent.Bencode
+import           Network.Libtorrent.Exceptions
 import           Network.Libtorrent.FileStorage (FileStorage)
 import           Network.Libtorrent.Inline
-import           Network.Libtorrent.Exceptions
 import           Network.Libtorrent.Internal
 import           Network.Libtorrent.Sha1Hash
 import           Network.Libtorrent.String
@@ -70,7 +71,7 @@ data CreateTorrentFlags =
       | ModificationTime
       | Symlinks
       | CalculateFileHashes
-  deriving (Show, Enum, Bounded, Eq)
+  deriving (Show, Enum, Bounded, Eq, Ord)
 
 newtype CreateTorrent = CreateTorrent { unCreateTorrent :: ForeignPtr (CType CreateTorrent) }
 
@@ -96,7 +97,7 @@ createTorrent fs mps mpfl mflags =
   liftIO . withPtr fs $ \fsPtr -> do
   let ps = fromMaybe 0 mps
       pfl = fromMaybe (-1) mpfl
-      flags = fromIntegral . fromEnum $ fromMaybe (BitFlags [Optimize]) mflags
+      flags = fromIntegral . fromEnum $ fromMaybe ([Optimize]) mflags
   res <- fromPtr [C.exp| create_torrent * { new create_torrent(*$(file_storage * fsPtr)
                                                               , $(int ps)
                                                               , $(int pfl)

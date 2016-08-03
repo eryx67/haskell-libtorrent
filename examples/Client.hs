@@ -22,8 +22,9 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base16 as BS16
 import           Data.Char (toLower, isUpper)
 import           Data.Default
-import           Data.List ((\\), union, find)
+import           Data.List (find)
 import           Data.Maybe (isJust)
+import           Data.Set ((\\), union)
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
@@ -31,18 +32,19 @@ import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.IO as TL
 import qualified Data.Vector.Storable as V
 import           Data.Word (Word16)
-import           System.EasyFile
 import           Foreign.C.Types (CInt, CFloat)
 import           Formatting
 import           Formatting.ShortFormatters (pf, f)
 import           Options.Applicative
 import qualified System.Console.ANSI as Console
+import           System.EasyFile
 import           System.IO (BufferMode(..),
                             hIsTerminalDevice , hFlush, hSetEcho,
                             stdin, stdout, stderr, hSetBuffering)
 import           System.IO.Error (isDoesNotExistError)
 import           System.Timeout.Lifted (timeout)
 import           Text.Read (readMaybe)
+import qualified GHC.Exts as Exts
 
 
 import           Network.Libtorrent
@@ -97,9 +99,9 @@ main = runStderrLoggingT $ do
       pure ()
 
   listenOn ses (_port, _port + 10) Nothing
-  setAlertMask ses $ BitFlags [minBound..]
+  setAlertMask ses $ Exts.fromList [minBound..]
 
-  let dhtRouters = [
+  let dhtRouters ::[(Text, CInt)] = [
         ("router.bittorrent.com", 6881)
         , ("router.utorrent.com", 6881)
         , ("router.bitcomet.com", 6881)
@@ -149,7 +151,8 @@ main = runStderrLoggingT $ do
       atp <- newAddTorrentParams src
       setStorageMode atp StorageModeSparse
       (BitFlags atpFlags) <- getFlags atp
-      setFlags atp  . BitFlags . union [AutoManaged, DuplicateIsError] $ atpFlags \\ [Paused]
+      setFlags atp  . BitFlags . union (Exts.fromList [AutoManaged, DuplicateIsError]) $
+        atpFlags \\ (Exts.fromList [Paused])
       setTorrentSavePath atp _savePath
       setMaxConnections atp 60
       setMaxUploads atp (-1)
@@ -272,7 +275,7 @@ saveFastresume ses ths = do
       waitAlerts $ 0 `max` n - processed
     saveResume a = do
       th <- getHandle a
-      st <- torrentStatus th . Just $ BitFlags [QuerySavePath, QueryName]
+      st <- torrentStatus th . Just $ Exts.fromList [QuerySavePath, QueryName]
       rd <- bencodedData <$> saveResumeDataAlertResumeData a
       sp <- getSavePath st
       tn <- getName st
@@ -281,7 +284,7 @@ saveFastresume ses ths = do
       $(logInfo) $ sformat ("resume data saved for " % stext % " to " % stext) tn sp
     saveResumeFailed a = do
       th <- getHandle a
-      st <- torrentStatus th . Just $ BitFlags [QuerySavePath, QueryName]
+      st <- torrentStatus th . Just $ Exts.fromList [QuerySavePath, QueryName]
       tn <- getName st
       ec <- saveResumeDataFailedAlertError a
       $(logError) $ sformat ("resume data save failed for " % stext % " reason " % shown) tn ec

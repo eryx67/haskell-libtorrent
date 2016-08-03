@@ -1,11 +1,12 @@
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE BangPatterns #-}
--- | 
+{-# LANGUAGE TypeFamilies #-}
+-- |
 
 module Network.Libtorrent.Types.ArrayLike where
 
-import Prelude hiding (foldMap)
-import Foreign.C.Types (CSize)
+import           Control.Monad   (forM_)
+import           Foreign.C.Types (CSize)
+import           Prelude         hiding (foldMap)
 
 class ArrayLike a where
   type ElemType a :: *
@@ -38,3 +39,9 @@ toList ar =
 class ArrayLike a => VectorLike a where
   newVector :: IO a
   addElem :: a -> ElemType a -> IO ()
+
+fromList :: VectorLike a => [ElemType a] -> IO a
+fromList as = do
+  v <- newVector
+  forM_ as $ addElem v
+  return v
