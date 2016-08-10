@@ -6,13 +6,14 @@
 
 module Network.Libtorrent.Types where
 
+import           Data.Aeson
 import           Data.Bits          (setBit, testBit)
 import           Data.List          (foldl')
 import           Data.Set           (Set)
 import qualified Data.Set           as Set
 import           Foreign.ForeignPtr (ForeignPtr)
 import           Foreign.Ptr        (Ptr)
-import           GHC.Exts           (IsList (..))
+import           GHC.Exts           (IsList (..), fromList, toList)
 import           GHC.Generics       (Generic)
 
 class Inlinable a where
@@ -50,6 +51,13 @@ instance (Enum a, Ord a, Bounded a) => Enum (BitFlags a) where
 
   fromEnum (BitFlags as) =
     foldl' (\i a -> setBit i (fromEnum a)) 0 as
+
+instance (Ord a, ToJSON a) => ToJSON (BitFlags a) where
+  toJSON (BitFlags as) = toJSON $ toList as
+
+instance (Ord a, FromJSON a) => FromJSON (BitFlags a) where
+   parseJSON v =
+     BitFlags . fromList <$> parseJSON v
 
 -- | Type to represent std::vector
 newtype StdVector e = StdVector { unStdVector :: ForeignPtr (CType (StdVector e))}

@@ -49,6 +49,7 @@ module Network.Libtorrent.Session.AddTorrentParams (AddTorrentParams
                                            ) where
 
 import           Control.Monad.IO.Class         (MonadIO, liftIO)
+import           Data.Aeson
 import           Data.ByteString                (ByteString)
 import qualified Data.ByteString                as BS
 import           Data.Text                      (Text)
@@ -115,6 +116,12 @@ data StorageMode =
   StorageModeAllocate
   | StorageModeSparse
   deriving (Show, Enum, Bounded, Eq, Generic)
+
+instance ToJSON AddTorrentFlags
+instance FromJSON AddTorrentFlags
+
+instance ToJSON StorageMode
+instance FromJSON StorageMode
 
 newtype AddTorrentParams = AddTorrentParams { unAddTorrentParams :: ForeignPtr (CType AddTorrentParams)}
 

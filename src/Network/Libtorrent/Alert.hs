@@ -225,6 +225,7 @@ module Network.Libtorrent.Alert (IsAlert(..)
 
 import           Control.Monad.IO.Class                         (MonadIO,
                                                                  liftIO)
+import           Data.Aeson
 import           Data.ByteString                                (ByteString)
 import qualified Data.ByteString                                as BS
 import           Data.Text                                      (Text)
@@ -307,6 +308,9 @@ data AlertCategory =
   | PortMappingLogNotification
   | PickerLogNotification
   deriving (Show, Enum, Bounded, Eq, Ord, Generic)
+
+instance ToJSON AlertCategory
+instance FromJSON AlertCategory
 
 newtype SubAlert a = SubAlert { unSubAlert :: a }
 

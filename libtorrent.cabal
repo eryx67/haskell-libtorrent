@@ -58,6 +58,12 @@ library
                      , Network.Libtorrent.Rss.FeedHandle
                      , Network.Libtorrent.Rss
                      , Network.Libtorrent.Vectors
+                     , Network.Libtorrent.H.AddTorrentOpts
+                     , Network.Libtorrent.H.AlertEvent
+                     , Network.Libtorrent.H.SessionOpts
+                     , Network.Libtorrent.H.Types
+                     , Network.Libtorrent.H.Client
+                     , Network.Libtorrent.H.Rays
   c-sources: src/Network/Libtorrent/String.cpp
            , src/Network/Libtorrent/Sha1Hash.cpp
            , src/Network/Libtorrent/Bitfield.cpp
@@ -104,6 +110,24 @@ library
                      , binary
                      , cryptohash
                      , random
+                     , aeson
+                     , aeson-casing
+                     , formatting
+                     , lifted-base
+                     , lifted-async
+                     , easy-file
+                     , monad-control
+                     , stm
+                     , transformers
+                     , transformers-base
+                     , mtl
+                     , monad-loops
+                     , base64-bytestring
+                     , base16-bytestring
+                     , data-default
+                     , lens
+                     , monad-logger
+                     , stm-chans
   default-language:    Haskell2010
   extra-libraries: stdc++
   pkgconfig-depends: libtorrent-rasterbar >= 1.0.9
