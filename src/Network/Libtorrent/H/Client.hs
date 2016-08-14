@@ -323,7 +323,7 @@ bootDht ses ac routers = do
                  setDhtAnnounceInterval ss' ai
                  setSessionSettings ses ss'
              ) $ \_ -> do
-               setDhtAnnounceInterval ss (60 * 1000000)
+               setDhtAnnounceInterval ss 60
                setSessionSettings ses ss
                timeout (960 * 1000000) waitAlert
       failWith "dht bootstrap failed" res
