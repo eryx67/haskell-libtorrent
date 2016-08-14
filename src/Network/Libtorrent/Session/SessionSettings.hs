@@ -368,6 +368,7 @@ module Network.Libtorrent.Session.SessionSettings (SessionSettings
                                         ) where
 
 import           Control.Monad.IO.Class      (MonadIO, liftIO)
+import           Data.Aeson
 import           Data.Text                   (Text)
 import qualified Data.Text.Foreign           as TF
 import           Foreign.C.Types             (CInt)
@@ -428,6 +429,24 @@ data BandwidthMixedAlgo =
   | PeerProportional
   deriving (Show, Enum, Bounded, Eq, Generic)
 
+
+instance ToJSON SuggestMode
+instance FromJSON SuggestMode
+
+instance ToJSON   SeedChokingAlgorithm
+instance FromJSON SeedChokingAlgorithm
+
+instance ToJSON   ChokingAlgorithm
+instance FromJSON ChokingAlgorithm
+
+instance ToJSON   BandwidthMixedAlgo
+instance FromJSON BandwidthMixedAlgo
+
+instance ToJSON   IoBufferMode
+instance FromJSON IoBufferMode
+
+instance ToJSON   DiskCacheAlgo
+instance FromJSON DiskCacheAlgo
 
 newtype SessionSettings = SessionSettings { unSessionSettings :: ForeignPtr (CType SessionSettings)}
 

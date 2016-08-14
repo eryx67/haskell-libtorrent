@@ -396,6 +396,11 @@ data SessionOpts = SessionOpts {
   }
   deriving (Generic, Show)
 
+instance ToJSON SessionOpts  where
+   toJSON = genericToJSON $ aesonDrop 1 snakeCase
+instance FromJSON SessionOpts where
+   parseJSON = genericParseJSON $ aesonDrop 1 snakeCase
+
 instance MergeableOpts SessionOpts where
   mergeOpts o1 o2 =
     SessionOpts
@@ -573,30 +578,6 @@ instance MergeableOpts SessionOpts where
     (_useDiskCachePool               o1 <|> _useDiskCachePool               o2  )
     (_inactiveDownRate               o1 <|> _inactiveDownRate               o2  )
     (_inactiveUpRate                 o1 <|> _inactiveUpRate                 o2  )
-
-
-instance ToJSON SuggestMode
-instance FromJSON SuggestMode
-
-instance ToJSON   SeedChokingAlgorithm
-instance FromJSON SeedChokingAlgorithm
-
-instance ToJSON   ChokingAlgorithm
-instance FromJSON ChokingAlgorithm
-
-instance ToJSON   BandwidthMixedAlgo
-instance FromJSON BandwidthMixedAlgo
-
-instance ToJSON   IoBufferMode
-instance FromJSON IoBufferMode
-
-instance ToJSON   DiskCacheAlgo
-instance FromJSON DiskCacheAlgo
-
-instance ToJSON SessionOpts  where
-   toJSON = genericToJSON $ aesonDrop 1 snakeCase
-instance FromJSON SessionOpts where
-   parseJSON = genericParseJSON $ aesonDrop 1 snakeCase
 
 sessionSettingsToOpts :: MonadIO m => SessionSettings -> m SessionOpts
 sessionSettingsToOpts ss =

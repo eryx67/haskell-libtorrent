@@ -480,12 +480,14 @@ startMetadataListener ac = liftIO $ do
 
 loadSessionState :: (MonadIO m, MonadCatch m) =>
                     Session -> FilePath -> ExceptT Text m ()
-loadSessionState ses fp = do
-  st <- liftIO $ BS.readFile fp
-  loadState ses st
-    `catches` [Handler (\(e::IOException) -> throwE . T.pack $ show e)
-              , Handler (\(e::LibtorrentException) -> throwE . T.pack $ show e)
-              ]
+loadSessionState ses fp =
+  go `catches` [Handler (\(e::IOException) -> throwE . T.pack $ show e)
+               , Handler (\(e::LibtorrentException) -> throwE . T.pack $ show e)
+               ]
+  where
+    go = do
+      st <- liftIO $ BS.readFile fp
+      loadState ses st
 
 saveSessionState :: (MonadIO m, MonadCatch m, MonadLogger m) =>
                     Session -> FilePath -> m ()

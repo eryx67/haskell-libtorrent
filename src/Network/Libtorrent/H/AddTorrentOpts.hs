@@ -41,8 +41,6 @@ import           Data.Text                  (Text)
 import qualified Data.Text.Encoding         as TE
 import           Data.Vector.Storable       (Vector)
 import           Data.Word                  (Word8)
-
-import qualified GHC.Exts                   as Exts
 import           GHC.Generics               (Generic)
 
 import           Network.Libtorrent
