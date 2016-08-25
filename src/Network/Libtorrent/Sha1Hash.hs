@@ -9,11 +9,14 @@ module Network.Libtorrent.Sha1Hash (Sha1Hash
                            , sha1HashSize
                            , newSha1Hash
                            , sha1HashToByteString
+                           , sha1HashToInfoHash
+                           , infoHashToSha1Hash
                            ) where
 
 import           Control.Monad.IO.Class      (MonadIO, liftIO)
 import           Data.ByteString             (ByteString)
 import qualified Data.ByteString             as BS
+import           Data.Maybe                  (fromJust)
 import           Foreign.ForeignPtr          (ForeignPtr, withForeignPtr)
 import           Foreign.Marshal.Array       (allocaArray)
 import qualified Language.C.Inline           as C
@@ -76,3 +79,10 @@ sha1HashToByteString sh =
        }
     |]
     BS.packCStringLen (cstr, sha1HashSize)
+
+sha1HashToInfoHash :: MonadIO m => Sha1Hash -> m InfoHash
+sha1HashToInfoHash = fmap (fromJust . newInfoHash) . sha1HashToByteString
+
+infoHashToSha1Hash :: MonadIO m => InfoHash -> m Sha1Hash
+infoHashToSha1Hash (InfoHash ih) =
+  fromJust <$> newSha1Hash ih

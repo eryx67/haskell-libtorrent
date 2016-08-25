@@ -1307,6 +1307,13 @@ module Network.Libtorrent (
   , sha1HashSize
   , newSha1Hash
   , sha1HashToByteString
+  , sha1HashToInfoHash
+  , infoHashToSha1Hash
+  -- ** InfoHash
+  , InfoHash
+  , newInfoHash
+  , infoHashToText
+  , infoHashToByteString
   -- ** BitFlags
   , BitFlags(..)
   -- ** ArrayLike

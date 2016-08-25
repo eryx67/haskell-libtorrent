@@ -89,6 +89,7 @@ data TorrentSrc =
   TorrentInfoSrc !TorrentInfo
   | UrlSrc !Text
   | InfoHashSrc !Sha1Hash
+  | TorrentFile !FilePath
                 deriving Show
 
 -- | Flags for <http://www.libtorrent.org/reference-Core.html#add-torrent-params add_torrent_params>
@@ -139,6 +140,7 @@ instance WithPtr AddTorrentParams where
   withPtr (AddTorrentParams fptr) = withForeignPtr fptr
 
 -- | Create 'AddTorrentParams' with default parameters.
+-- It can throw 'IOException' or 'LibtorrentException'
 newAddTorrentParams :: MonadIO m =>  TorrentSrc -> m AddTorrentParams
 newAddTorrentParams ts = liftIO $ do
   atp <- fromPtr [CU.exp| add_torrent_params * { new add_torrent_params() } |]
@@ -163,6 +165,11 @@ newAddTorrentParams ts = liftIO $ do
     addTorrent (InfoHashSrc ih) atPtr =
       withPtr ih $ \ihPtr ->
       [CU.exp| void { $(add_torrent_params * atPtr)->info_hash = sha1_hash(*$(sha1_hash * ihPtr)) } |]
+    addTorrent (TorrentFile fp) atPtr = do
+        bs <- liftIO $ BS.readFile fp
+        ti <- torrentInfoFromBuffer bs
+        addTorrent (TorrentInfoSrc ti) atPtr
+
 
 setFlags :: MonadIO m =>  AddTorrentParams -> BitFlags AddTorrentFlags -> m ()
 setFlags atp flags =

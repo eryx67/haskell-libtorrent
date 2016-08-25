@@ -6,14 +6,14 @@ module Network.Libtorrent.Exceptions (LibtorrentException(..)
                              , except
                              ) where
 
-import Control.Monad (when)
-import Control.Monad.Catch
-import Foreign.Ptr ( Ptr, nullPtr )
+import           Control.Monad                          (when)
+import           Control.Monad.Catch
+import           Foreign.Ptr                            (Ptr, nullPtr)
 
-import Network.Libtorrent.ErrorCode
-import Network.Libtorrent.Exceptions.Internal
-import Network.Libtorrent.Types
-import Network.Libtorrent.Inline
+import           Network.Libtorrent.ErrorCode
+import           Network.Libtorrent.Exceptions.Internal
+import           Network.Libtorrent.Inline
+import           Network.Libtorrent.Types
 
 
 data LibtorrentException =
@@ -23,6 +23,7 @@ data LibtorrentException =
   | BDecodeError !ErrorCode
   | SessionError !ErrorCode
   | CreateTorrentError !ErrorCode
+  | ReadPieceError !ErrorCode
   deriving Show
 
 instance Exception LibtorrentException

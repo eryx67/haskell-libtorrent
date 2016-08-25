@@ -248,6 +248,7 @@ import           System.IO.Unsafe                               (unsafePerformIO
 
 import           Network.Libtorrent.Bencode
 import           Network.Libtorrent.ErrorCode
+import           Network.Libtorrent.Exceptions
 import           Network.Libtorrent.Inline
 import           Network.Libtorrent.Internal
 import           Network.Libtorrent.PeerRequest                 (PeerRequest)
@@ -597,12 +598,18 @@ readPieceAlertEc ho =
   liftIO . withPtr (SubAlert ho) $ \hoPtr ->
   fromPtr [CU.exp| error_code * { new error_code($(read_piece_alert * hoPtr)->ec) } |]
 
-readPieceAlertBuffer :: MonadIO m => ReadPieceAlert -> m ByteString
-readPieceAlertBuffer ho =
-  liftIO . withPtr (SubAlert ho) $ \hoPtr -> do
-    csize <- readPieceAlertPiece ho
-    chars <- [CU.exp| char * { $(read_piece_alert * hoPtr)->buffer.get() } |]
-    BS.packCStringLen (chars, fromIntegral csize)
+readPieceAlertBuffer :: MonadIO m => ReadPieceAlert -> m (Either LibtorrentException ByteString)
+readPieceAlertBuffer ho = liftIO $ do
+  ec <- readPieceAlertEc ho
+  ecv <- errorCodeValue ec
+  case ecv of
+    0 ->
+      withPtr (SubAlert ho) $ \hoPtr -> do
+        csize <- readPieceAlertSize ho
+        chars <- [CU.exp| char * { $(read_piece_alert * hoPtr)->buffer.get() } |]
+        Right <$> BS.packCStringLen (chars, fromIntegral csize)
+    _ ->
+      return . Left $ ReadPieceError ec
 
 readPieceAlertPiece :: MonadIO m => ReadPieceAlert -> m CInt
 readPieceAlertPiece ho =

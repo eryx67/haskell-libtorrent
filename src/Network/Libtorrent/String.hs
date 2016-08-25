@@ -1,8 +1,8 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE FlexibleInstances #-}
--- | 
+{-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TypeFamilies      #-}
+-- |
 
 module Network.Libtorrent.String (StdString
                          , unStdString
@@ -12,16 +12,18 @@ module Network.Libtorrent.String (StdString
                          , byteStringToStdString
                          ) where
 
-import           Data.ByteString (ByteString)
-import qualified Data.ByteString as BS
-import           Data.Text (Text)
-import qualified Data.Text as T
-import qualified Data.Text.Foreign as TF
-import           Foreign.ForeignPtr ( ForeignPtr, withForeignPtr )
-import qualified Language.C.Inline as C
-import qualified Language.C.Inline.Cpp as C
-import qualified Language.C.Inline.Unsafe as CU
-import           System.IO.Unsafe (unsafePerformIO)
+import           Data.ByteString             (ByteString)
+import qualified Data.ByteString             as BS
+import           Data.Text                   (Text)
+import qualified Data.Text                   as T
+import qualified Data.Text.Encoding          as TE
+import qualified Data.Text.Encoding.Error    as TE
+import qualified Data.Text.Foreign           as TF
+import           Foreign.ForeignPtr          (ForeignPtr, withForeignPtr)
+import qualified Language.C.Inline           as C
+import qualified Language.C.Inline.Cpp       as C
+import qualified Language.C.Inline.Unsafe    as CU
+import           System.IO.Unsafe            (unsafePerformIO)
 
 
 import           Network.Libtorrent.Inline
@@ -54,10 +56,7 @@ instance WithPtr StdString where
 
 stdStringToText :: StdString -> IO Text
 stdStringToText s =
-  withPtr s $ \ptr -> do
-    cstr <- [CU.exp| const char * {$(string * ptr)->c_str()} |]
-    len <- [CU.exp| int {$(string * ptr)->length()} |]
-    TF.peekCStringLen (cstr, fromIntegral len)
+  TE.decodeUtf8With TE.lenientDecode <$> stdStringToByteString s
 
 textToStdString :: Text -> IO StdString
 textToStdString s =
